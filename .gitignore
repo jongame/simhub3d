@@ -1,0 +1,15 @@
+*.exe
+*.lps
+*.res
+synapse/
+zeos/
+backup/
+lib/
+complete/SIMHUB3D.exe
+complete/libeay32.dll
+complete/ssleay32.dll
+complete/sqlite3.dll
+complete/data.db
+autorun.sh
+make.sh
+help.txt

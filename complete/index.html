@@ -1,0 +1,141 @@
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<script src="https://cdn.jsdelivr.net/gh/jquery/jquery@3.5.1/dist/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.js"></script>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" crossorigin="anonymous">
+		<title>_PROGRAM_NAME_</title>
+		<style>
+			#maintable {border: 1px solid #333399;border-collapse: collapse;}
+			#maintable th,td {border:1px solid #333399!important;border-collapse:collapse!important;
+			height: 22px!important;padding-top: 0px!important;padding-bottom:0px!important;padding-right:0px!important;
+			padding-left:0px!important;}
+			#maintable div {text-align: center;width: auto;}
+			textarea {
+			background: #dce1f8; /* Цвет фона */
+			border: 2px solid #a3aafb; /* Параметры рамки */
+			padding: 0px; /* Поля */
+			width: 100%; /* Ширина */
+			height: 250px;	 /* Высота */
+			box-sizing: border-box; /* Алгоритм расчёта ширины */
+			font-size: 14px; /* Размер шрифта */
+			resize: none;
+			}
+		</style>
+		<script src="script.js"></script>
+	</head>
+	<body>
+		<nav class="navbar navbar-inverse">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="collapsed navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-9" aria-expanded="false">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					</button>
+					<a href="#" class="navbar-brand">SIMHUB</a>
+				</div>
+				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-9">
+					<button class="btn btn-danger navbar-right navbar-btn" id="btn_systemexit">Закрыть</button>
+					<button class="btn btn-warning navbar-right navbar-btn" id="btn_all_reset">Перезагрузить все</button>
+					<!--<button class="btn btn-danger navbar-right navbar-btn" id="btn_systemreboot">Перезагруза</button>-->
+					<!--<button class="btn btn-warning navbar-right navbar-btn" id="btn_system">Служебные функции</button>-->
+					<button class="btn btn-warning navbar-right navbar-btn" id="btn_allzapros">Общий запрос номера</button>
+					<button class="btn btn-warning navbar-right navbar-btn" id="btn_neopredelenzapros">Запрос неопределенных</button>
+					<button class="btn btn-info navbar-right navbar-btn" id="btn_systemrestart" >Перезапуск</button>
+					<button class="btn btn-info navbar-right navbar-btn" id="btn_systemreboot" >Reboot OS</button>
+					<button class="btn btn-info navbar-right navbar-btn" id="btn_memoclear" >Очистить доску</button>
+				</div>
+			</div>
+		</nav>    
+		<div class="container-fluid">
+			<div id="IDMAINTABLE" class="col-md-2" style="height:1200px;overflow-y:scroll;">
+				<table id="maintable" class="table table-hover">
+					<tbody>
+						<tr><td><div>№</div></td><td><div>Nomer</div></td><td><div>State</div></td></tr>
+						_MAIN_TABLE_TAG_
+					</tbody>
+				</table>
+			</div>
+			<div class="col-md-8">
+				<div class="col-md-12">
+					<textarea id="mainmemo"></textarea>
+				</div>
+				<div class="col-md-6">
+					<label for="history_list">История:</label>
+					<select multiple id="history_list" class="form-control" style="height:130px">
+						<!--<option>1</option>-->
+					</select>
+				</div>
+				<div class="col-md-6">
+					<button type="button" class="btn btn-primary btn-sm" id="btn_system_delete_sms">Удалить смс</button>
+					<label for="history_text">Текст сообщения:</label>
+					<textarea id="history_text" style="height: 130px;"></textarea>
+				</div>
+			<div id="system_div" class="col-md-12" <!--style="display: none;"-->
+				<div class="col-md-4">
+					<div class="col-md-12">
+						<label for="sendmemo">Команды:</label>
+						<textarea id="sendmemo"></textarea>
+					</div>
+					<div class="col-md-12">
+						<div class="input-group">
+						<input type="text" class="form-control" id="input_at_cmd" value="" placeholder="vk,ok">
+						<span class="input-group-btn">
+							<button class="btn btn-info" type="button" id="btn_at_send" >SEND</button>
+						</span>
+						</div>
+					</div>					
+					<div class="col-md-12">
+						<button type="button" class="btn btn-primary" id="btn_system_delete_service">Удалить сервисы</button>
+						<button type="button" class="btn btn-primary" id="btn_system_delete_service2">Удалить сервисы(окно)</button>
+					</div>					
+					<div class="col-md-12">
+						<button type="button" class="btn btn-primary" id="btn_system_set_nomer">Установить номер</button>
+					
+					</div>
+					
+				</div>
+				<div class="col-md-4">
+					<div class="col-md-12">
+						<label for="recvmemo">Ответы:</label><textarea id="recvmemo"></textarea>
+					</div>
+					<div class="col-md-12">
+						<div class="col-md-6"><button class="btn btn-info navbar-right navbar-btn" id="btn_system_testsms" >Тест смс</button></div>
+						<div class="col-md-6"><button class="btn btn-info navbar-right navbar-btn" id="btn_system_config_filter" >Filter config</button></div>
+						
+					</div>					
+					<div class="col-md-12">
+						<div class="col-md-6"><button class="btn btn-info navbar-right navbar-btn" id="btn_system_config_telega" >Telega config</button></div>
+						<div class="col-md-6"><button class="btn btn-info navbar-right navbar-btn" id="btn_system_config_url" >URL config</button></div>
+					</div>					
+					<div class="col-md-12">
+						<div class="col-md-6"><button class="btn btn-info navbar-right navbar-btn" id="btn_system_config_ports" >List port</button></div>
+						<div class="col-md-6"><button class="btn btn-info navbar-right navbar-btn" id="btn_system_config_portsnomera" >List portsnomera</button></div>
+					</div>
+					
+				</div>
+				<div class="col-md-4">
+					<div class="col-md-12">
+						<label for="smsmemo">Общее:</label>
+						<textarea id="smsmemo" style="height: 215px;"></textarea>
+					</div>
+					<div class="col-md-12">
+						<div class="col-md-6"><button id="btn_zapros_nomera" type="button" class="btn btn-info btn-sm">Запрос номера</button></div>
+						<div class="col-md-6"><button id="btn_reset" type="button" class="btn btn-danger btn-sm">ПЕРЕЗАГРУЗИТЬ</button></div>
+					</div>					
+					<div class="col-md-12">
+						<div class="col-md-6"><button id="btn_send_sms" type="button" class="btn btn-info btn-sm">Отправка смс</button></div>
+						<div class="col-md-6"><button id="btn_allsend_sms" type="button" class="btn btn-info btn-sm">Отправка смс всеми</button></div>
+					</div>					
+					<div class="col-md-12">
+						<div class="col-md-6"><button id="btn_allsend_sms_noreg" type="button" class="btn btn-info btn-sm">Отправка смс нерег.</button></div>
+					</div>
+				</div>
+			</div>
+			</div>
+			</div>
+		</div>
+	</body>
+</html>
