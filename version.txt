@@ -1,1 +1,1 @@
-100
+100=https://raw.githubusercontent.com/jongame/simhub3d/main/version.txt
