@@ -84,6 +84,7 @@ function utf16tohex(s: string):string;
 procedure DebugLog(s:string);overload;
 procedure DebugLog(s,fs:string);overload;
 procedure start_self();
+procedure TextToFile(text, filename: string);
 
 implementation
 
@@ -135,24 +136,25 @@ function TagServiceToIntActivation(s: string): integer;
 begin
   result := -1;
   case s of
-    'aa': result :=  0;
-    'fb': result :=  1;
-    'vk': result :=  2;
-    'ma': result :=  3;
-    'ya': result :=  4;
-    'go': result :=  5;
-    'ig': result :=  6;
-    'sn': result :=  7;
-    'tg': result :=  8;
-    'wa': result :=  9;
-    'vi': result := 10;
-    'av': result := 11;
-    'tw': result := 12;
-    'ub': result := 13;
-    'qw': result := 14;
-    'gt': result := 15;
-    'ok': result := 16;
-    'wb': result := 17;
+    'ignore': result :=  0;
+    'aa': result :=  1;
+    'fb': result :=  2;
+    'vk': result :=  3;
+    'ma': result :=  4;
+    'ya': result :=  5;
+    'go': result :=  6;
+    'ig': result :=  7;
+    'sn': result :=  8;
+    'tg': result :=  9;
+    'wa': result := 10;
+    'vi': result := 11;
+    'av': result := 12;
+    'tw': result := 13;
+    'ub': result := 14;
+    'qw': result := 15;
+    'gt': result := 16;
+    'ok': result := 17;
+    'wb': result := 18;
   end;
 end;
 
@@ -160,24 +162,25 @@ function IntToTagServiceActivation(i: integer): string;
 begin
   result := '';
   case i of
-    0: result := 'aa';
-    1: result := 'fb';
-    2: result := 'vk';
-    3: result := 'ma';
-    4: result := 'ya';
-    5: result := 'go';
-    6: result := 'ig';
-    7: result := 'sn';
-    8: result := 'tg';
-    9: result := 'wa';
-    10: result := 'vi';
-    11: result := 'av';
-    12: result := 'tw';
-    13: result := 'ub';
-    14: result := 'qw';
-    15: result := 'gt';
-    16: result := 'ok';
-    17: result := 'wb';
+     0: result := 'ignore';
+     1: result := 'aa';
+     2: result := 'fb';
+     3: result := 'vk';
+     4: result := 'ma';
+     5: result := 'ya';
+     6: result := 'go';
+     7: result := 'ig';
+     8: result := 'sn';
+     9: result := 'tg';
+    10: result := 'wa';
+    11: result := 'vi';
+    12: result := 'av';
+    13: result := 'tw';
+    14: result := 'ub';
+    15: result := 'qw';
+    16: result := 'gt';
+    17: result := 'ok';
+    18: result := 'wb';
   end;
 end;
 {
@@ -407,6 +410,23 @@ begin
   {$ELSE}
   ShellExecute(0,nil, PChar('SIMHUB3D.exe'),nil,nil,1)
   {$ENDIF}
+end;
+
+procedure TextToFile(text, filename: string);
+var
+  f : Textfile;
+begin
+  ForceDirectories(extractfilepath(filename));
+  AssignFile(f, filename);
+  try
+    if FileExists(filename) = False then
+     Rewrite(f)
+    else
+      Append(f);
+    Writeln(f, Text);
+  finally
+    CloseFile(f);
+  end;
 end;
 
 function GetTempCPU:string;

@@ -5,15 +5,16 @@ unit maind;
 interface
 
 uses
-  {$IFDEF UNIX}BaseUnix,{$ELSE}{$ENDIF}Classes, SysUtils, starterunit, syncobjs, myfunctions, modemunit, portcons, LazUtf8, RegExpr, httpsend;
+  {$IFDEF UNIX}BaseUnix,{$ELSE}windows,{$ENDIF}Classes, SysUtils, starterunit, syncobjs, myfunctions, modemunit, portcons, LazUtf8, RegExpr, HTTPSend, synautil, ssl_openssl;
 
 
 procedure dMain();
-procedure checkupdate();
+function checkupdate():boolean;
 procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
+  version = 100;
 
 var
   timestart: string;
@@ -77,7 +78,9 @@ procedure dMain();
 var
   Text, exp, res: string;
 begin
-  checkupdate();
+  if ParamStr(1) <> 'ignore' then
+    if checkupdate() then
+      exit;
   if ParamStr(1) = 'exp' then
     while (True) do
     begin
@@ -113,19 +116,70 @@ begin
   Deinit();
 end;
 
-procedure checkupdate();
+function checkupdate():boolean;
 var
-  sl: TStringList;
+  M: TMemoryStream;
+  HTTP: THTTPSend;
+  res: boolean;
+  s: string;
+  v: integer;
+  i: integer;
 begin
-  sl := TStringList.Create();
+  result := false;
+  {$IFDEF UNIX}
+  exit;
+  {$ELSE}
+  HTTP := THTTPSend.Create;
   try
-    if HttpGetText('', sl) then
+    res := HTTP.HTTPMethod('GET', 'https://raw.githubusercontent.com/jongame/simhub3d/main/version.txt');
+    if res then
     begin
+      s := ReadStrFromStream(HTTP.Document, HTTP.Document.Size);
+      v := StrToInt(Copy(s, 1, Pos('=', s)-1));
+      Delete(s, 1, Pos('=', s));
+      if (v>version) then
+      begin
+        M := TMemoryStream.Create;
+        try
+          HTTP.Clear;
+          res := HTTP.HTTPMethod('GET', s);
+          if (HTTP.ResultCode=302) then
+          begin
+            for i:=0 to HTTP.Headers.Count-1 do
+              if Pos('Location', HTTP.Headers.Strings[i])<>0 then
+              begin
+                s := HTTP.Headers.Strings[i];
+                Delete(s, 1, Pos('https', s)-1);
+                HTTP.Clear;
+                res := HTTP.HTTPMethod('GET', s);
+                break;
+              end;
+          end;
+          if (res) then
+          begin
+            M.CopyFrom(HTTP.Document, 0);
+            M.SaveToFile(extractfilepath(paramstr(0))+'upd'+IntToStr(v)+'.exe');
+            ForceDirectories(extractfilepath(paramstr(0))+'backup');
+            DeleteFile(extractfilepath(paramstr(0))+'upd.bat');
 
+            TextToFile('timeout 1 > nul', extractfilepath(paramstr(0))+'upd.bat');
+            TextToFile('move "'+ paramstr(0) + '" "' + extractfilepath(paramstr(0))+'backup\simhub3d'+IntToStr(version)+'.exe"', extractfilepath(paramstr(0))+'upd.bat');
+            TextToFile('move "'+ extractfilepath(paramstr(0))+'upd'+IntToStr(v)+'.exe" "' + paramstr(0) + '"', extractfilepath(paramstr(0))+'upd.bat');
+            TextToFile('start /d "' + extractfilepath(paramstr(0)) + '" simhub3d.exe '+ paramstr(0), extractfilepath(paramstr(0))+'upd.bat');
+            ShellExecute(0, PChar ('open'), PChar('cmd'), PChar('/c '+extractfilepath(paramstr(0))+'upd.bat'), nil, SW_NORMAL);
+            sleep(500);
+            DeleteFile(extractfilepath(paramstr(0))+'upd.bat');
+            result := true;
+          end;
+        finally
+          M.Free;
+        end;
+      end;
     end;
   finally
-    sl.Free;
+    HTTP.Free;
   end;
+  {$ENDIF}
 end;
 
 procedure MainMemoWrite(const a: string; i: integer);

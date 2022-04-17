@@ -1,4 +1,4 @@
-program SIMHUB3D;
+program simhub3d;
 
 {$mode objfpc}{$H+}
 

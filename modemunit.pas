@@ -172,12 +172,10 @@ end;
 
 procedure TMyModem.Str2Nomer(s: string);
 begin
-  //if (OperatorNomer<>SIM_TELE2)AND(OperatorNomer<>SIM_ACTIV) then exit;
   if (Pos('myphone', s) = 0) then
     exit;
   Delete(s, 1, Pos('"', s));
   nomer := '+' + Copy(s, 1, Pos('"', s) - 1);
-  SMSHistoryAdd('Ваш номер ' + nomer);
 end;
 
 function TMyModem.ParseCFUN(s: string): integer;
@@ -1143,6 +1141,8 @@ procedure TMyModem.OnSms(const date, Notkogo, Text: ansistring);
 const
   nomerpr = '+7';
 begin
+  if (starter.SMSCheckService('ignore', Notkogo, Text)<>'') then
+    exit;
   if CheckMsg(hashb(Notkogo + date + Text, 128)) = False then
   begin
 

@@ -38,6 +38,7 @@ type
     procedure SendNomeraToServer();
     procedure CheckSendSMS();
     function DB_open(): boolean;
+    procedure DB_fix();
     procedure DB_close();
   public
     drawbox: boolean;
@@ -257,7 +258,7 @@ begin
   _cs.Enter;
   try
     dbq.Close;
-    for i := 0 to 17 do
+    for i := 0 to 18 do
     begin
       dbq.SQL.Text := 'INSERT OR IGNORE INTO "filter_service"("service", "filter") VALUES (:service, :filter);';
       dbq.ParamByName('service').AsString := IntToTagServiceActivation(i);
@@ -537,6 +538,21 @@ begin
   except
     on E: Exception do
       ShowInfo(E.ClassName + ':' + E.Message + IntToStr(stage));
+  end;
+end;
+
+procedure TMyStarter.DB_fix();
+begin
+  _cs.Enter;
+  try
+    dbq.Close;
+    dbq.SQL.Text := 'DELETE FROM sms WHERE otkogo="SYSTEM" AND text LIKE "Ваш номер %";';
+    dbq.ExecSQL;
+    dbq.SQL.Text := 'VACUUM;';
+    dbq.ExecSQL;
+    dbq.Close;
+  finally
+    _cs.Leave;
   end;
 end;
 
@@ -982,7 +998,7 @@ begin
     ShowInfo('Ошибка файла data.db');
     exit; //Ошибка бд.
   end;
-
+  DB_fix();
   StartALL();
   DB_servicefilter_load();
   DB_telegramclient_load();
