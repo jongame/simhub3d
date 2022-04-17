@@ -7,7 +7,9 @@ interface
 uses
   {$IFDEF UNIX}BaseUnix,{$ELSE}{$ENDIF}Classes, SysUtils, starterunit, syncobjs, myfunctions, modemunit, portcons, LazUtf8, RegExpr, httpsend;
 
+
 procedure dMain();
+procedure checkupdate();
 procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
@@ -75,6 +77,7 @@ procedure dMain();
 var
   Text, exp, res: string;
 begin
+  checkupdate();
   if ParamStr(1) = 'exp' then
     while (True) do
     begin
@@ -108,6 +111,21 @@ begin
   for i := Low(AM) to High(AM) do
     AM[i].Terminate;
   Deinit();
+end;
+
+procedure checkupdate();
+var
+  sl: TStringList;
+begin
+  sl := TStringList.Create();
+  try
+    if HttpGetText('', sl) then
+    begin
+
+    end;
+  finally
+    sl.Free;
+  end;
 end;
 
 procedure MainMemoWrite(const a: string; i: integer);
