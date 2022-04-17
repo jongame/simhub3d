@@ -1,1 +1,1 @@
-100=https://raw.githubusercontent.com/jongame/simhub3d/main/version.txt
+99=https://github.com/jongame/simhub3d/releases/download/v99/SIMHUB3D.exe
