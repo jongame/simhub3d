@@ -568,7 +568,7 @@ begin
 
     SIM_KYIVSTAR: SendUSSD('*161#');
     SIM_UMC_UKR: SendUSSD('*161#');
-    SIM_MTS_UKR: SendUSSD('*120#');
+    SIM_MTS_UKR: SendUSSD('*161#');
 
     SIM_VELCOM: SendUSSD('*147#');
     SIM_MTCBY: SendUSSD('*147#');
@@ -1154,7 +1154,7 @@ begin
   end;
 
   if ((UTF8Pos('nomer', Text) <> 0) or (UTF8Pos('номер', Text) <> 0) or (UTF8Pos('Номер', Text) <> 0) or
-    (UTF8Pos('Vash nomer velcom:', Text) <> 0)) and (Nomer = Nomer_Neopredelen) then
+    (UTF8Pos('Vash nomer velcom:', Text) <> 0) or (UTF8Pos('Vash nomer:', Text) <> 0)) and (Nomer = Nomer_Neopredelen) then
   begin
     if UTF8Pos(nomerpr, Text) <> 0 then
       nomer := nomerpr + UTF8Copy(Text, UTF8Pos(nomerpr, Text) + 2, 10)
@@ -1204,11 +1204,11 @@ begin
       end;
       SIM_MTS_UKR:
       begin
-
+          nomer := '+'+Copy(GetNumber(Text),1,12);
       end;
       SIM_UMC_UKR:
       begin
-
+        nomer := '+'+Copy(GetNumber(Text),1,12);
       end;
       SIM_MTCBY:
       begin
