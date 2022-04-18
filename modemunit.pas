@@ -1108,7 +1108,8 @@ end;
 procedure TMyModem.MyStart();
 begin
   ShowSms('', TimeHM + ' запустился.');
-
+  if (nomer = Nomer_Neopredelen) then
+    ZaprosNomera();
   if (OperatorNomer = SIM_UNKNOWN) then
   begin
     //ShowSms(IntToStr(idthread), IntToStr(idthread) + ' Неизвестный оператор');
@@ -1199,16 +1200,18 @@ begin
       end;
       SIM_KYIVSTAR:
       begin
-        if (UTF8Pos('Ваш номер', Text)<>0) then
+        if (Length(GetNumber(Text))=12) then
           nomer := '+'+Copy(GetNumber(Text),1,12);
       end;
       SIM_MTS_UKR:
       begin
+        if (Length(GetNumber(Text))=12) then
           nomer := '+'+Copy(GetNumber(Text),1,12);
       end;
       SIM_UMC_UKR:
       begin
-        nomer := '+'+Copy(GetNumber(Text),1,12);
+        if (Length(GetNumber(Text))=12) then
+          nomer := '+'+Copy(GetNumber(Text),1,12);
       end;
       SIM_MTCBY:
       begin
@@ -1310,15 +1313,6 @@ begin
     MODEM_WAIT_WHILE:
     begin
       Sleep(2500);
-      exit;
-    end;
-    MODEM_NEED_RESTART_REFSQL:
-    begin
-      Sleep(250);
-      if Checkall = 1 then
-        CheckAll := 0;
-      MODEM_STATE := MODEM_WAIT_WHILE;
-      PORT_STATE := PORT_WAIT;
       exit;
     end;
     MODEM_NEED_RESTART_AT_CPMS:
@@ -1636,6 +1630,7 @@ begin
           if (tmps <> ICC) then
           begin
             TextSmsAdd('Похоже вставлена новая сим карта, сбросываю номер.');
+            CheckAll := 0;
             ICC := tmps;
             nomer := Nomer_Neopredelen;
             SaveToDb();
