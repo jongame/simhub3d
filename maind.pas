@@ -14,7 +14,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 100;
+  version = 101;
 
 var
   timestart: string;
@@ -78,6 +78,9 @@ procedure dMain();
 var
   Text, exp, res: string;
 begin
+  writeln('v', version);
+  if FileExists(extractfilepath(paramstr(0))+'upd.bat') then
+    DeleteFile(extractfilepath(paramstr(0))+'upd.bat');
   if ParamStr(1) <> 'ignore' then
     if checkupdate() then
       exit;
@@ -161,14 +164,12 @@ begin
             M.SaveToFile(extractfilepath(paramstr(0))+'upd'+IntToStr(v)+'.exe');
             ForceDirectories(extractfilepath(paramstr(0))+'backup');
             DeleteFile(extractfilepath(paramstr(0))+'upd.bat');
-
             TextToFile('timeout 1 > nul', extractfilepath(paramstr(0))+'upd.bat');
             TextToFile('move "'+ paramstr(0) + '" "' + extractfilepath(paramstr(0))+'backup\simhub3d'+IntToStr(version)+'.exe"', extractfilepath(paramstr(0))+'upd.bat');
             TextToFile('move "'+ extractfilepath(paramstr(0))+'upd'+IntToStr(v)+'.exe" "' + paramstr(0) + '"', extractfilepath(paramstr(0))+'upd.bat');
             TextToFile('start /d "' + extractfilepath(paramstr(0)) + '" simhub3d.exe '+ paramstr(0), extractfilepath(paramstr(0))+'upd.bat');
             ShellExecute(0, PChar ('open'), PChar('cmd'), PChar('/c '+extractfilepath(paramstr(0))+'upd.bat'), nil, SW_NORMAL);
-            sleep(500);
-            DeleteFile(extractfilepath(paramstr(0))+'upd.bat');
+            //sleep(500);
             result := true;
           end;
         finally
