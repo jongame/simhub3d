@@ -14,7 +14,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 101;
+  version = 102;
 
 var
   timestart: string;
@@ -142,6 +142,7 @@ begin
       Delete(s, 1, Pos('=', s));
       if (v>version) then
       begin
+        writeln(UTF8ToConsole('Обновление..'));
         M := TMemoryStream.Create;
         try
           HTTP.Clear;

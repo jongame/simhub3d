@@ -1139,8 +1139,6 @@ begin
 end;
 
 procedure TMyModem.OnSms(const date, Notkogo, Text: ansistring);
-const
-  nomerpr = '+7';
 begin
   if (starter.SMSCheckService('ignore', Notkogo, Text)<>'') then
     exit;
@@ -1154,16 +1152,14 @@ begin
     exit;
   end;
 
-  if ((UTF8Pos('nomer', Text) <> 0) or (UTF8Pos('номер', Text) <> 0) or (UTF8Pos('Номер', Text) <> 0) or
+  if ((UTF8Pos('Сіздің нөміріңіз', Text) <> 0) or (UTF8Pos('nomer', Text) <> 0) or (UTF8Pos('номер', Text) <> 0) or (UTF8Pos('Номер', Text) <> 0) or
     (UTF8Pos('Vash nomer velcom:', Text) <> 0) or (UTF8Pos('Vash nomer:', Text) <> 0)) and (Nomer = Nomer_Neopredelen) then
   begin
-    if UTF8Pos(nomerpr, Text) <> 0 then
-      nomer := nomerpr + UTF8Copy(Text, UTF8Pos(nomerpr, Text) + 2, 10)
-    else if (Length(GetNumber(Text)) = 11) then
-      nomer := '+' + GetNumber(Text)
-    else if (Length(GetNumber(Text)) = 10) then
-      nomer := nomerpr + GetNumber(Text);
-
+    if (Length(GetNumber(Text)) = 11) then
+      nomer := '+'+GetNumber(Text)
+    else
+      if (Length(GetNumber(Text)) = 12) then
+      nomer := '+' + GetNumber(Text);
     case OperatorNomer of
       SIM_MTS:
       begin
@@ -1186,11 +1182,11 @@ begin
       begin
 
       end;
-      SIM_KCELL:
+      SIM_ASTELIT:
       begin
 
       end;
-      SIM_ASTELIT:
+      SIM_KCELL:
       begin
 
       end;
@@ -1198,20 +1194,21 @@ begin
       begin
 
       end;
+      SIM_ACTIV:
+      begin
+
+      end;
       SIM_KYIVSTAR:
       begin
-        if (Length(GetNumber(Text))=12) then
-          nomer := '+'+Copy(GetNumber(Text),1,12);
+
       end;
       SIM_MTS_UKR:
       begin
-        if (Length(GetNumber(Text))=12) then
-          nomer := '+'+Copy(GetNumber(Text),1,12);
+
       end;
       SIM_UMC_UKR:
       begin
-        if (Length(GetNumber(Text))=12) then
-          nomer := '+'+Copy(GetNumber(Text),1,12);
+
       end;
       SIM_MTCBY:
       begin
@@ -1220,9 +1217,7 @@ begin
       SIM_VELCOM:
       begin
 
-      end
-      else
-        nomer := Nomer_Neopredelen;
+      end;
     end;
     if isPhoneNomer(nomer) then
     begin
