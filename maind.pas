@@ -165,7 +165,7 @@ begin
             M.SaveToFile(extractfilepath(paramstr(0))+'upd'+IntToStr(v)+'.exe');
             ForceDirectories(extractfilepath(paramstr(0))+'backup');
             DeleteFile(extractfilepath(paramstr(0))+'upd.bat');
-            TextToFile('timeout 1 > nul', extractfilepath(paramstr(0))+'upd.bat');
+            TextToFile('timeout 5 > nul', extractfilepath(paramstr(0))+'upd.bat');
             TextToFile('move "'+ paramstr(0) + '" "' + extractfilepath(paramstr(0))+'backup\simhub3d'+IntToStr(version)+'.exe"', extractfilepath(paramstr(0))+'upd.bat');
             TextToFile('move "'+ extractfilepath(paramstr(0))+'upd'+IntToStr(v)+'.exe" "' + paramstr(0) + '"', extractfilepath(paramstr(0))+'upd.bat');
             TextToFile('start /d "' + extractfilepath(paramstr(0)) + '" simhub3d.exe '+ paramstr(0), extractfilepath(paramstr(0))+'upd.bat');

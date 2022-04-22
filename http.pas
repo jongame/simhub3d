@@ -31,7 +31,7 @@ type
     function Jsonmainmemo(const a, b, c, d, e, f: integer; const g: string):string;
     function Jsongetport(const a: integer): string;
     function ExecutePostData(const url, Data: string): string;
-    function ExecuteGetData(const url, Data: string): string;
+    function ExecuteGetData(url: string): string;
     function SendAllData(url, Data: string): string;
     function Str2httpcommand(const uri: string): TStringList;
     function mygetDecode(const s: string): string;
@@ -431,21 +431,22 @@ begin
   end;
 end;
 
-function TTCPHttpThrd.ExecuteGetData(const url, Data: string): string;
+function TTCPHttpThrd.ExecuteGetData(url: string): string;
 var
-  i: integer;
+  i, k: integer;
   J: TJSONObject;
+  tnomer, code: string;
 begin
   J := TJSONObject.Create;
   try
-    case url of
-      '/starter/alldata':
+    case Str2httpcommand(url).ValueFromIndex[1] of
+      'alldata':
       begin
         for i := 0 to High(AM) do
           J.Add(IntToStr(i + 1), AM[i].nomer);
         J.Add('result', 'done');
       end;
-      '/starter/sendalldata':
+      'sendalldata':
       begin
         for i := 0 to High(AM) do
           J.Add(IntToStr(i + 1), AM[i].nomer);
@@ -453,18 +454,39 @@ begin
         SendAllData('http://192.168.1.1/loadsms.php', J.FormatJSON);
       end;
 
-      '/starter/exit':
+      'exit':
       begin
         serverwork := False;
         J.Add('result', 'done');
       end;
-      '/starter/state':
+      'state':
       begin
         Result := '';
         for i := 0 to High(AM) do
         begin
           Result := Result + 'MS:' + IntToStr(AM[i].MODEM_STATE) + ' PS:' + IntToStr(byte(AM[i].PORT_STATE)) + '<cr>';
         end;
+        J.Add('result', Result);
+      end;
+      'get_sms2service':
+      begin
+        result := 'error';
+        tnomer := DecodeURL(Str2httpcommand(url).Values['nomer']);
+        for i := 0 to High(AM) do
+          if (AM[i]<>nil) then
+            if (AM[i].nomer=tnomer) then
+            begin
+              for k:=High(AM[i].smshistory) downto 0 do
+              begin
+                code := starter.SMSCheckService(DecodeURL(Str2httpcommand(url).Values['service']),AM[i].smshistory[k].otkogo,AM[i].smshistory[k].text);
+                if code<>'' then
+                begin
+                  J.Add('code', code);
+                  break;
+                end;
+              end;
+              result := 'done';
+            end;
         J.Add('result', Result);
       end;
     end;
@@ -1091,7 +1113,7 @@ begin
           headers.Add('Content-Type:application/json; charset=utf-8');
           l := TStringList.Create;
           try
-            l.Text := ExecuteGetData(URI, Data);
+            l.Text := ExecuteGetData(URI);
             l.SaveToStream(OutputData);
           finally
             l.Free;
