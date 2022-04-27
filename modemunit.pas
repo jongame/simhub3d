@@ -1171,7 +1171,8 @@ begin
       end;
       SIM_MEGAFON:
       begin
-
+        if (Length(GetNumber(Text)) = 10) then
+          nomer := '+7' + GetNumber(Text);
       end;
       SIM_TELE2:
       begin
