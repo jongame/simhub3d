@@ -14,7 +14,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 102;
+  version = 103;
 
 var
   timestart: string;
@@ -102,6 +102,17 @@ begin
         res := res + CutCodeInSms(Text, exp);
       writeln(UTF8ToConsole(res));
     end;
+  if ParamStr(1) = 'ussd' then
+    while (True) do
+    begin
+      writeln(UTF8ToConsole('Введите текст:'));
+      readln(Text);
+      writeln('USSD:'+USSDResponse(Text));
+      writeln('UCS:'+UCSToAnsi(Text));
+
+    end;
+
+
   CloseAnother();
   timestart := TimeDMYHM();
   Init();

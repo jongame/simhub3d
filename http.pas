@@ -136,6 +136,7 @@ begin
         else
           Result := '<head><meta http-equiv="refresh" content="5;URL="' + url +
             '" /></head><body><p>Ошибка, неверное количество портов.</p></body>';
+        starter.DB_setvalue('ignore', DecodeURL(ReplaceString(d.Values['ignoreval'], '+', '%20')));
       end;
       '/config/portsnomera':
       begin
@@ -1057,8 +1058,9 @@ begin
                   starter.DB_getvalue('telegrambot') +
                   '</textarea><p style="margin-bottom: 0px;margin-top: 0px;">Телеграм клиенты:</p><textarea rows="5" cols="50" name="telegramclients">' +
                   starter.DB_telegramclient_text() + '</textarea><input type="submit" value="Сохранить"></form>';
-              'ports': l.Text := '<form action="/config/ports" method="post"><textarea rows="15" cols="50" name="val">' +
-                  getlistports() + '</textarea><input type="submit" value="Сохранить"></form>';
+              'ports': l.Text := '<form action="/config/ports" method="post"><textarea rows="10" cols="50" name="val">' +
+                  getlistports() + '</textarea><p style="margin-bottom: 0px;margin-top: 0px;">Игнорировать порты:</p><textarea rows="2" cols="50" name="ignoreval">' +
+                  starter.DB_getvalue('ignore') + '</textarea><input type="submit" value="Сохранить"></form>';
               'portsnomera': l.Text := '<form action="/config/portsnomera" method="post"><textarea rows="15" cols="50" name="val">' +
                   getlistportsnomera() + '</textarea><input type="submit" value="Сохранить"></form>';
               'urlsms': l.Text :=

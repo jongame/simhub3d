@@ -426,9 +426,6 @@ begin
       begin
         if (AM[i].MODEM_STATE <> MODEM_MAIN_WHILE) or (AM[i].nomer = Nomer_Neopredelen) or (AM[i].nomer = data_neopredelen) or (AM[i].operatorNomer = SIM_UNKNOWN) then
           continue;
-        if (AM[i].operatorNomer = SIM_UNKNOWN) then
-          continue;
-
         t := SMSCheckAllService(i);
         Arrays[AM[i].nomer] := CreateJSONArray([operator_names_to_activate[AM[i].operatorNomer],t,i+1]);
       end;
@@ -522,8 +519,6 @@ begin
       dbq.ExecSQL;
       DB_setvalue('ignore', '');
       DB_setvalue('urlactivesms', '');
-      DB_setvalue('urlsendsms', '');
-      DB_setvalue('urlrefreshsms', '');
       DB_setvalue('servername', 'new server');
     end;
     dbq.SQL.Text := 'CREATE TABLE IF NOT EXISTS "telegram" ("id" INTEGER PRIMARY KEY AUTOINCREMENT,"idtelegram" TEXT,"service" TEXT,UNIQUE ("idtelegram" ASC));';

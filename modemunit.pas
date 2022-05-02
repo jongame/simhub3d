@@ -143,23 +143,27 @@ begin
 end;
 
 procedure TMyModem.Str2Operator(s: string);
+var
+  toper: string;
 begin
   if Pos('"', s) <> 0 then
     s := Copy(s, Pos('"', s) + 1, PosEx('"', s, Pos('"', s) + 1) - (Pos('"', s) + 1))
   else
     exit;
-  case s of
+  toper := Upcase(s);
+  case toper of
     //Россия
     'MTS-RUS', 'MTS RUS', 'MTS': OperatorNomer := SIM_MTS;
-    '25099', 'BEE L', 'BEE LINE', 'Bee Line', 'Beeline': OperatorNomer := SIM_BEELINE;
-    'MegaFon', 'NWGSM RUS': OperatorNomer := SIM_MEGAFON;
-    '25020', '40177', 'CC 250 NC 03', 'TELE2', 'Mobile Telecom Service', 'Tele2', '': OperatorNomer := SIM_TELE2;
+    '25099', 'BEE L', 'BEE LINE', 'BEELINE': OperatorNomer := SIM_BEELINE;
+    'MEGAFON', 'NWGSM RUS': OperatorNomer := SIM_MEGAFON;
+    '25020', '40177', 'CC 250 NC 03', 'TELE2', 'MOBILE TELECOM SERVICE': OperatorNomer := SIM_TELE2;
     //Казахстан
     'ALTEL': OperatorNomer := SIM_ALTEL;
     'KCELL': OperatorNomer := SIM_KCELL;
     'Astelit': OperatorNomer := SIM_ASTELIT;
-    'life:)': OperatorNomer := SIM_LIFE;
-    'activ', 'ACTIV': OperatorNomer := SIM_ACTIV;
+    'LIVE:)': OperatorNomer := SIM_LIFE;
+    'ACTIV': OperatorNomer := SIM_ACTIV;
+    'BEELINE KZ': OperatorNomer := SIM_BEELINE_KZ;
     //Украина
     'UA-KYIVSTAR', 'KYIVSTAR': OperatorNomer := SIM_KYIVSTAR;
     'MTS UKR': OperatorNomer := SIM_MTS_UKR;
@@ -572,6 +576,7 @@ begin
 
     SIM_VELCOM: SendUSSD('*147#');
     SIM_MTCBY: SendUSSD('*147#');
+    SIM_BEELINE_KZ: SendUSSD('*100*2#');
   end;
 end;
 
@@ -1919,7 +1924,7 @@ begin
               if (nomer <> Nomer_Neopredelen) and (Pos('+CME ERROR: 10', s) <> 0) then
               begin
                 nomer := data_neopredelen;
-                IMEI := '123456789012345';
+                //IMEI := '123456789012345';
                 SaveToDb();
               end;
             end;

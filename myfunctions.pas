@@ -727,33 +727,35 @@ begin
 end;
 
 function UCSToAnsi(s:string):string;
-function FMT(C:string):string;
-var i:integer;
-begin
- i := StrToIntDef('$'+C,33);
- {$IFDEF windows}
- if i=$0A then
+  function FMT(C:string):string;
+  var
+     i:integer;
   begin
-  Result := UnicodeToUTF8(13)+UnicodeToUTF8(10);
-  exit;
+   i := StrToIntDef('$'+C,33);
+   {$IFDEF windows}
+   if i=$0A then
+    begin
+    Result := UnicodeToUTF8(13)+UnicodeToUTF8(10);
+    exit;
+    end;
+   {$ENDIF}
+   {case i of
+    8470: i := $b9;
+    1040..1103: i := i - 848;
+    1105      : i := 184;
+   end;  }
+   Result := UnicodeToUTF8(i);
   end;
- {$ENDIF}
- {case i of
-  8470: i := $b9;
-  1040..1103: i := i - 848;
-  1105      : i := 184;
- end;  }
- Result := UnicodeToUTF8(i);
-end;
-var C:integer;
-   I:integer;
+var
+  C:integer;
+  I:integer;
 begin
-Result := '';
-C := Length(S) div 4;
-For i:=0 to C-1 do
-begin
- Result := Result + FMT(Copy(S,i*4+1,4));
-end;
+  Result := '';
+  C := Length(S) div 4;
+  For i:=0 to C-1 do
+  begin
+    Result := Result + FMT(Copy(S,i*4+1,4));
+  end;
 end;
 
 function myswaptime(const s:string):string;
