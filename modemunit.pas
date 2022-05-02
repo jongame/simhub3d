@@ -576,7 +576,7 @@ begin
 
     SIM_VELCOM: SendUSSD('*147#');
     SIM_MTCBY: SendUSSD('*147#');
-    SIM_BEELINE_KZ: SendUSSD('*100*2#');
+    SIM_BEELINE_KZ: SendUSSD('*160#');
   end;
 end;
 
