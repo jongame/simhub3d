@@ -1248,6 +1248,11 @@ begin
     ShowSms('', '[' + date + ']' + Notkogo + '->' + Text);
     exit;
   end;
+  if (nomer = Nomer_Neopredelen) and (Notkogo = 'USSD') then
+  begin
+    ShowSms('', '[' + date + ']' + Notkogo + '->' + Text);
+    exit;
+  end;
   ShowSms(Notkogo, '[' + date + ']' + Notkogo + '->' + Text);
   starter.Telegram_SendSMS(nomer, Notkogo, Text);
   SMSHistoryAdd(date, Notkogo, Text);
