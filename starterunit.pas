@@ -656,6 +656,8 @@ begin
     dbq.Close;
     dbq.SQL.Text := 'DELETE FROM sms WHERE otkogo="SYSTEM" AND text LIKE "Ваш номер %";';
     dbq.ExecSQL;
+    dbq.SQL.Text := 'DELETE FROM sms WHERE id NOT IN (SELECT id FROM sms ORDER BY id DESC LIMIT 100000);';
+    dbq.ExecSQL;
     dbq.SQL.Text := 'VACUUM;';
     dbq.ExecSQL;
     dbq.Close;

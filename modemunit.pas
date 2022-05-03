@@ -1061,9 +1061,15 @@ var
 begin
   s := starter.DB_getvalue(IMEI);
   if ((s <> '')AND(force=false)) then
+  begin
+
     starter.DB_setvalue(IMEI, ParseConfigData(s) + ',' + nomer + ',' + ICC)
+  end
   else
+  begin
+    debuglog('s:'+s+' | ' + IMEI + ' ' + IntToStr(idthread + 1) + ',' + nomer + ',' + ICC,'resetport.txt');
     starter.DB_setvalue(IMEI, IntToStr(idthread + 1) + ',' + nomer + ',' + ICC);
+  end;
 end;
 
 procedure TMyModem.tickSendsms();

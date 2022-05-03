@@ -1077,7 +1077,7 @@ begin
             case Str2httpcommand(URI).ValueFromIndex[1] of
               'filter': l.Text := '<form action="/config/filter" method="post"><textarea rows="15" cols="45" name="val">' +
                   starter.DB_servicefilter_text() + '</textarea><input type="submit" value="Сохранить"></form>';
-              'triggers': l.Text := '<form action="/config/triggers" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">OTKOGO:TEXT:=KOMU:TEXT</p><textarea rows="14" cols="45" name="val">' +
+              'triggers': l.Text := '<form action="/config/triggers" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">OTKOGO:TEXT:=KOMU:TEXT</p><p style="margin-bottom: 0px;margin-top: 0px;">OTKOGO:TEXT:=reset</p><textarea rows="14" cols="45" name="val">' +
                   starter.DB_triggers_text() + '</textarea><input type="submit" value="Сохранить"></form>';
               'telegram': l.Text :=
                   '<form action="/config/telegram" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Токет бота:</p><textarea rows="5" cols="50" name="token">' +
