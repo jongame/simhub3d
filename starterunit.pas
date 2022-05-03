@@ -537,6 +537,8 @@ begin
       begin
         if (AM[i].MODEM_STATE <> MODEM_MAIN_WHILE) or (AM[i].nomer = Nomer_Neopredelen) or (AM[i].nomer = data_neopredelen) or (AM[i].operatorNomer = SIM_UNKNOWN) then
           continue;
+        if (AM[i].statesim <> 1) AND (AM[i].statesim <> 5) then
+          continue;
         t := SMSCheckAllService(i);
         Arrays[AM[i].nomer] := CreateJSONArray([operator_names_to_activate[AM[i].operatorNomer],t,i+1]);
       end;
