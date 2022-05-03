@@ -623,7 +623,7 @@ begin
       for j := 0 to High(AM) do
         if (t.Strings[i] = AM[j].scom) then
         begin
-          SwapThread(i, j);
+          starter.SwapThread(i, j);
           AM[j].SaveToDb();
           AM[i].SaveToDb(True);
         end;

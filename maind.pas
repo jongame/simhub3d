@@ -10,6 +10,7 @@ uses
 
 procedure dMain();
 function checkupdate():boolean;
+procedure update_index_script();
 procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
@@ -80,7 +81,10 @@ var
 begin
   writeln('v', version);
   if FileExists(extractfilepath(paramstr(0))+'upd.bat') then
+  begin
+    update_index_script();
     DeleteFile(extractfilepath(paramstr(0))+'upd.bat');
+  end;
   if ParamStr(1) <> 'ignore' then
     if checkupdate() then
       exit;
@@ -192,6 +196,69 @@ begin
   finally
     HTTP.Free;
   end;
+  {$ENDIF}
+end;
+
+procedure update_index_script;
+var
+  M: TMemoryStream;
+  HTTP: THTTPSend;
+  res: boolean;
+  s: string;
+  i: integer;
+begin
+  {$IFDEF UNIX}
+  exit;
+  {$ELSE}
+  HTTP := THTTPSend.Create;
+  try
+    writeln(UTF8ToConsole('Обновление index.html и script.js'));
+    M := TMemoryStream.Create;
+    try
+      res := HTTP.HTTPMethod('GET', 'https://raw.githubusercontent.com/jongame/simhub3d/main/complete/index.html');
+      if (HTTP.ResultCode=302) then
+      begin
+        for i:=0 to HTTP.Headers.Count-1 do
+          if Pos('Location', HTTP.Headers.Strings[i])<>0 then
+          begin
+            s := HTTP.Headers.Strings[i];
+            Delete(s, 1, Pos('https', s)-1);
+            HTTP.Clear;
+            res := HTTP.HTTPMethod('GET', s);
+            break;
+          end;
+      end;
+      if (res) then
+      begin
+        M.CopyFrom(HTTP.Document, 0);
+        M.SaveToFile(extractfilepath(paramstr(0))+'\complete\index.html');
+      end;
+      HTTP.Clear;
+      res := HTTP.HTTPMethod('GET', 'https://raw.githubusercontent.com/jongame/simhub3d/main/complete/script.js');
+      if (HTTP.ResultCode=302) then
+      begin
+        for i:=0 to HTTP.Headers.Count-1 do
+          if Pos('Location', HTTP.Headers.Strings[i])<>0 then
+          begin
+            s := HTTP.Headers.Strings[i];
+            Delete(s, 1, Pos('https', s)-1);
+            HTTP.Clear;
+            res := HTTP.HTTPMethod('GET', s);
+            break;
+          end;
+      end;
+      if (res) then
+      begin
+        M.CopyFrom(HTTP.Document, 0);
+        M.SaveToFile(extractfilepath(paramstr(0))+'\complete\script.js');
+      end;
+    finally
+      M.Free;
+    end;
+  finally
+    HTTP.Free;
+  end;
+  writeln(UTF8ToConsole('+'));
   {$ENDIF}
 end;
 

@@ -45,8 +45,8 @@ type
     _stagestarter: integer;
     telegram_bot_id: string;
     servername, urlactivesms: string;
-
     property stagestarter: integer read _RSTAGESTARTER write _WSTAGESTARTER default 0;
+    procedure SwapThread(a, b: integer);
     procedure Telegram_SendSMS(const sl,n, t: string);
     procedure Telegram_Send(const telega, Text: string);
     procedure AddToSendSms(nomer, otkogo, Text, date: string);
@@ -555,6 +555,24 @@ procedure TMyStarter.DB_close();
 begin
   dbq.Free;
   dbc.Free;
+end;
+
+procedure TMyStarter.SwapThread(a, b: integer);
+var
+  t: TMyModem;
+begin
+  if a = b then
+    exit;
+  _cs.Enter;
+  try
+    t := AM[a];
+    AM[a] := AM[b];
+    AM[a].idthread := a;
+    AM[b] := t;
+    AM[b].idthread := b;
+  finally
+    _cs.Leave;
+  end;
 end;
 
 procedure TMyStarter.Telegram_SendSMS(const sl, n, t: string);

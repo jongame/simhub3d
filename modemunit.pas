@@ -122,25 +122,12 @@ type
     procedure Execute; override;
   end;
 
-procedure SwapThread(a, b: integer);
+
 
 implementation
 
 uses
   maind;
-
-procedure SwapThread(a, b: integer);
-var
-  t: TMyModem;
-begin
-  if a = b then
-    exit;
-  t := AM[a];
-  AM[a] := AM[b];
-  AM[a].idthread := a;
-  AM[b] := t;
-  AM[b].idthread := b;
-end;
 
 procedure TMyModem.Str2Operator(s: string);
 var
@@ -1467,7 +1454,7 @@ begin
       begin
         i := StrToInt(ParseConfigData(tmps)) - 1;
         if ((i>=0)AND(i<=High(AM))) then
-          SwapThread(idthread, i);
+          starter.SwapThread(idthread, i);
         nomer := ParseConfigData(tmps);
         ICC := ParseConfigData(tmps);
       end;
