@@ -27,6 +27,7 @@ type
     //arrayofactivation: TArrayofACTIVATION_OBJECT;
     arrayoffilteractivation: array[0..63] of TArrayofMyServiceSms;
     arraytelegramclients: array of MyTelegramCLient;
+    arrayoftriggers: array of MyTrigger;
     _cs: TCriticalSection;
 
     function LoadSerialPorts(): TStringList;
@@ -55,10 +56,15 @@ type
     procedure SMSDeleteService2(const ids, service: string);
     function SMSCheckService(const service, otkogo, Text: string): string;
     function SMSCheckAllService(const n: integer): string;
+    function SMSCheckTriggers(const ot, text: string):string;
     procedure DB_addsms(nomer, datetime, otkogo, Text: string);
     procedure DB_deletesms(nomer, datetime, otkogo, Text: string);overload;
     procedure DB_deletesms(id: integer);overload;
     procedure DB_loadsms(idthread: integer);
+
+    procedure DB_triggers_load();
+    procedure DB_triggers_save(const val: string);
+    function DB_triggers_text: string;
 
     procedure DB_servicefilter_load();
     procedure DB_servicefilter_save(const s: string);
@@ -180,6 +186,25 @@ begin
   end;
 end;
 
+function TMyStarter.SMSCheckTriggers(const ot, text: string): string;
+var
+  i: integer;
+begin
+  result := '';
+  if (ot='') OR (text='') then
+    exit;
+  for i := 0 to High(arrayoftriggers) do
+  begin
+    if (arrayoftriggers[i].input.otkogo <> '')AND(ot<>'') then
+      if (ExecRegExpr(arrayoftriggers[i].input.otkogo, ot) = False) then
+        continue;
+    if (arrayoftriggers[i].input.textsms <> '')AND(text<>'') then
+      if (ExecRegExpr(arrayoftriggers[i].input.textsms, text) = False) then
+        continue;
+    exit(arrayoftriggers[i].output);
+  end;
+end;
+
 procedure TMyStarter.DB_addsms(nomer, datetime, otkogo, Text: string);
 begin
   _cs.Enter;
@@ -245,6 +270,92 @@ begin
     end;
   finally
     dbq.Close;
+    _cs.Leave;
+  end;
+end;
+
+procedure TMyStarter.DB_triggers_load;
+var
+  s: string;
+begin
+  _cs.Enter;
+  try
+    dbq.Close;
+    dbq.SQL.Text := 'SELECT * FROM "triggers";';
+    dbq.Open;
+    while not dbq.EOF do
+    begin
+      SetLength(arrayoftriggers, Length(arrayoftriggers) + 1);
+      s := dbq.FieldByName('input').AsString;
+      arrayoftriggers[High(arrayoftriggers)].input.otkogo := Copy(s, 1, Pos(':', s) - 1);
+      Delete(s, 1, Pos(':', s));
+      arrayoftriggers[High(arrayoftriggers)].input.textsms := Copy(s, 1, Pos(':', s) - 1);
+      Delete(s, 1, Pos(':', s));
+      arrayoftriggers[High(arrayoftriggers)].input.cutsms := s;
+      arrayoftriggers[High(arrayoftriggers)].output := dbq.FieldByName('output').AsString;
+      dbq.Next;
+    end;
+  finally
+    dbq.Close;
+    _cs.Leave;
+  end;
+end;
+
+procedure TMyStarter.DB_triggers_save(const val: string);
+var
+  i: integer;
+  sl: TStringList;
+  s: string;
+begin
+  _cs.Enter;
+  sl := TStringList.Create();
+  try
+    sl.Text := val;
+    SetLength(arrayoftriggers, sl.Count);
+    for i:=0 to sl.Count-1 do
+    begin
+      s := sl.Strings[i];
+      arrayoftriggers[i].input.otkogo := Copy(s, 1, Pos(':', s) - 1);
+      Delete(s, 1, Pos(':', s));
+      arrayoftriggers[i].input.textsms := Copy(s, 1, Pos(':', s) - 1);
+      Delete(s, 1, Pos(':', s));
+      arrayoftriggers[i].input.cutsms := Copy(s, 1, Pos('=', s) - 1);
+      Delete(s, 1, Pos('=', s));
+      arrayoftriggers[i].output := s;
+    end;
+    dbq.Close;
+    dbq.SQL.Text := 'DELETE FROM "triggers";';
+    dbq.ExecSQL;
+    for i:=0 to High(arrayoftriggers) do
+    begin
+      dbq.SQL.Text := 'INSERT OR IGNORE INTO "triggers"("id", "input", "output") VALUES (:id, :input, :output);';
+      dbq.ParamByName('id').AsInteger := i + 1;
+      dbq.ParamByName('input').AsString := arrayoftriggers[i].input.otkogo + ':' + arrayoftriggers[i].input.textsms + ':' + arrayoftriggers[i].input.cutsms;
+      dbq.ParamByName('output').AsString := arrayoftriggers[i].output;
+      dbq.ExecSQL;
+    end;
+  finally
+    sl.Free;
+    _cs.Leave;
+  end;
+end;
+
+function TMyStarter.DB_triggers_text: string;
+var
+  i: integer;
+  sl: TStringList;
+begin
+  result := '';
+  sl := TStringList.Create();
+  _cs.Enter;
+  try
+    for i:=0 to High(arrayoftriggers) do
+    begin
+      sl.Add(arrayoftriggers[i].input.otkogo + ':' + arrayoftriggers[i].input.textsms + ':' + arrayoftriggers[i].input.cutsms+'='+arrayoftriggers[i].output);
+    end;
+    result := sl.Text;
+  finally
+    sl.Free;
     _cs.Leave;
   end;
 end;
@@ -524,6 +635,8 @@ begin
     dbq.SQL.Text := 'CREATE TABLE IF NOT EXISTS "telegram" ("id" INTEGER PRIMARY KEY AUTOINCREMENT,"idtelegram" TEXT,"service" TEXT,UNIQUE ("idtelegram" ASC));';
     dbq.ExecSQL;
     dbq.SQL.Text := 'CREATE TABLE IF NOT EXISTS "filter_service" ("service" TEXT NOT NULL,"filter" TEXT,PRIMARY KEY ("service"));';
+    dbq.ExecSQL;
+    dbq.SQL.Text := 'CREATE TABLE IF NOT EXISTS "triggers" ("id" INTEGER NOT NULL, "input" TEXT NULL, "output" TEXT NULL, PRIMARY KEY ("id"));';
     dbq.ExecSQL;
     stage := 1;
     dbq.SQL.Text := 'INSERT OR IGNORE INTO "keyvalue"("key", "value") VALUES (''telegrambot'', '''');';
@@ -1015,6 +1128,7 @@ begin
   StartALL();
   DB_servicefilter_load();
   DB_telegramclient_load();
+  DB_triggers_load();
 
   if (serverwork = False) then
   begin

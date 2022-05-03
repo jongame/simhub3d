@@ -1131,6 +1131,8 @@ begin
 end;
 
 procedure TMyModem.OnSms(const date, Notkogo, Text: ansistring);
+var
+  restriggers: string;
 begin
   if (starter.SMSCheckService('ignore', Notkogo, Text)<>'') then
     exit;
@@ -1239,6 +1241,21 @@ begin
   begin
     ShowSms('', '[' + date + ']' + Notkogo + '->' + Text);
     exit;
+  end;
+  restriggers := starter.SMSCheckTriggers(Notkogo, text);
+  if (restriggers<>'') then
+  begin
+    if (restriggers='reset') then
+    begin
+      Send('AT+CFUN=1,1');
+      sleep(2000);
+      PORT_STATE := PORT_RESTART;
+    end
+    else
+    begin
+      AddToSendSms( Copy(restriggers, 1, Pos(':',restriggers)-1), Copy(restriggers, Pos(':', restriggers) + 1, Length(restriggers) - Pos(':', restriggers)));
+    end;
+    ShowSms('', 'Trigger[' + date + ']' + Notkogo + '->' + Text);
   end;
   ShowSms(Notkogo, '[' + date + ']' + Notkogo + '->' + Text);
   starter.Telegram_SendSMS(nomer, Notkogo, Text);

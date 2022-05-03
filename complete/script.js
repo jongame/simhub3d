@@ -486,6 +486,12 @@ $("#btn_system_config_url").click(function() {
 	window.open('/config/urlsms', '_blank', 'width=450, height=300');
 });
 
+$("#btn_system_config_triggers").click(function() {
+	$(this).prop( "disabled", true );
+	setTimeout(function() {$("#btn_system_config_triggers").prop( "disabled", false );}, 1500);
+	window.open('/config/triggers', '_blank', 'width=450, height=300');
+});
+
 $("#btn_system_delete_service2").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_system_delete_service2").prop( "disabled", false );}, 1500);

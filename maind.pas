@@ -231,8 +231,9 @@ begin
       if (res) then
       begin
         M.CopyFrom(HTTP.Document, 0);
-        M.SaveToFile(extractfilepath(paramstr(0))+'\complete\index.html');
+        M.SaveToFile(extractfilepath(paramstr(0))+'index.html');
       end;
+      M.Clear;
       HTTP.Clear;
       res := HTTP.HTTPMethod('GET', 'https://raw.githubusercontent.com/jongame/simhub3d/main/complete/script.js');
       if (HTTP.ResultCode=302) then
@@ -250,7 +251,7 @@ begin
       if (res) then
       begin
         M.CopyFrom(HTTP.Document, 0);
-        M.SaveToFile(extractfilepath(paramstr(0))+'\complete\script.js');
+        M.SaveToFile(extractfilepath(paramstr(0))+'script.js');
       end;
     finally
       M.Free;

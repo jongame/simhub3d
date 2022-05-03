@@ -36,6 +36,7 @@ type
     function Str2httpcommand(const uri: string): TStringList;
     function mygetDecode(const s: string): string;
     function getlistports(): string;
+    function getlistportsimei(): string;
     function getlistportsnomera(): string;
     function setlistports(const s: string): boolean;
     function setlistportsnomera(const s: string): boolean;
@@ -116,6 +117,13 @@ begin
         Headers.Clear;
         Headers.Add('Content-type: Text/Html; charset=utf-8');
         starter.DB_servicefilter_save(DecodeURL(ReplaceString(d.Values['val'], '+', '%20')));
+        Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>';
+      end;
+      '/config/triggers':
+      begin
+        Headers.Clear;
+        Headers.Add('Content-type: Text/Html; charset=utf-8');
+        starter.DB_triggers_save(DecodeURL(ReplaceString(d.Values['val'], '+', '%20')));
         Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>';
       end;
       '/config/telegram':
@@ -592,6 +600,22 @@ begin
   end;
 end;
 
+function TTCPHttpThrd.getlistportsimei(): string;
+var
+  i: integer;
+  t: TStringList;
+begin
+  Result := '';
+  t := TStringList.Create;
+  try
+    for i := 0 to High(AM) do
+      t.Add(AM[i].scom+':'+AM[i].imei);
+    Result := t.Text;
+  finally
+    t.Free;
+  end;
+end;
+
 function TTCPHttpThrd.getlistportsnomera(): string;
 var
   i: integer;
@@ -1053,6 +1077,8 @@ begin
             case Str2httpcommand(URI).ValueFromIndex[1] of
               'filter': l.Text := '<form action="/config/filter" method="post"><textarea rows="15" cols="45" name="val">' +
                   starter.DB_servicefilter_text() + '</textarea><input type="submit" value="Сохранить"></form>';
+              'triggers': l.Text := '<form action="/config/triggers" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">OTKOGO:TEXT:=KOMU:TEXT</p><textarea rows="14" cols="45" name="val">' +
+                  starter.DB_triggers_text() + '</textarea><input type="submit" value="Сохранить"></form>';
               'telegram': l.Text :=
                   '<form action="/config/telegram" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Токет бота:</p><textarea rows="5" cols="50" name="token">' +
                   starter.DB_getvalue('telegrambot') +
@@ -1061,6 +1087,8 @@ begin
               'ports': l.Text := '<form action="/config/ports" method="post"><textarea rows="10" cols="50" name="val">' +
                   getlistports() + '</textarea><p style="margin-bottom: 0px;margin-top: 0px;">Игнорировать порты:</p><textarea rows="2" cols="50" name="ignoreval">' +
                   starter.DB_getvalue('ignore') + '</textarea><input type="submit" value="Сохранить"></form>';
+              'portsimei': l.Text := '<form action="/config/portsimei" method="post"><textarea rows="15" cols="80" name="val">' +
+                  getlistportsimei() + '</textarea></form>';
               'portsnomera': l.Text := '<form action="/config/portsnomera" method="post"><textarea rows="15" cols="50" name="val">' +
                   getlistportsnomera() + '</textarea><input type="submit" value="Сохранить"></form>';
               'urlsms': l.Text :=

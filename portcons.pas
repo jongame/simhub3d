@@ -114,6 +114,14 @@ type
     Text: string;
   end;
 
+
+type
+   MyTrigger = record
+    input: MyFilterObject;
+    output: string;
+  end;
+
+
 type
   TArrayString = array of string;
   TArrayinteger = array of integer;
