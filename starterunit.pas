@@ -533,6 +533,7 @@ begin
   with TJSONObject.Create do
     try
       Strings['servername'] := servername;
+      Integers['port_count'] := Length(AM);
       for i := 0 to High(AM) do
       begin
         if (AM[i].MODEM_STATE <> MODEM_MAIN_WHILE) or (AM[i].nomer = Nomer_Neopredelen) or (AM[i].nomer = data_neopredelen) or (AM[i].operatorNomer = SIM_UNKNOWN) then

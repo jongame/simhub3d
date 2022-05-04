@@ -15,7 +15,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 107;
+  version = 108;
 
 var
   timestart: string;

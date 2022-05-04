@@ -1251,17 +1251,23 @@ begin
   restriggers := starter.SMSCheckTriggers(Notkogo, text);
   if (restriggers<>'') then
   begin
+    ShowSms('', 'Trigger[' + date + ']' + Notkogo + '->' + Text);
     if (restriggers='reset') then
     begin
       Send('AT+CFUN=1,1');
       sleep(2000);
       PORT_STATE := PORT_RESTART;
-    end
-    else
-    begin
-      AddToSendSms( Copy(restriggers, 1, Pos(':',restriggers)-1), Copy(restriggers, Pos(':', restriggers) + 1, Length(restriggers) - Pos(':', restriggers)));
     end;
-    ShowSms('', 'Trigger[' + date + ']' + Notkogo + '->' + Text);
+    if (Copy(restriggers, 1, Pos(':',restriggers)-1)='CALL') then
+    begin
+      Send('ATD'+Copy(restriggers, Pos(':', restriggers) + 1, Length(restriggers) - Pos(':', restriggers))+';');
+    end
+    else if (Copy(restriggers, 1, Pos(':',restriggers)-1)='USSD') then
+    begin
+      SendUSSD(Copy(restriggers, Pos(':', restriggers) + 1, Length(restriggers) - Pos(':', restriggers)));
+    end else
+      AddToSendSms(Copy(restriggers, 1, Pos(':',restriggers)-1), Copy(restriggers, Pos(':', restriggers) + 1, Length(restriggers) - Pos(':', restriggers)));
+    exit;
   end;
   ShowSms(Notkogo, '[' + date + ']' + Notkogo + '->' + Text);
   starter.Telegram_SendSMS(nomer, Notkogo, Text);
