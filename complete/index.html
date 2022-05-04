@@ -11,6 +11,7 @@
 			height: 22px!important;padding-top: 0px!important;padding-bottom:0px!important;padding-right:0px!important;
 			padding-left:0px!important;}
 			#maintable div {text-align: center;width: auto;}
+			.no-margin {padding-left: 0px;padding-right: 0px; margin: 0 !important}
 			textarea {
 			background: #dce1f8; /* Цвет фона */
 			border: 2px solid #a3aafb; /* Параметры рамки */
@@ -50,7 +51,7 @@
 			</div>
 		</nav>    
 		<div class="container-fluid">
-			<div id="IDMAINTABLE" class="col-md-2" style="height:1200px;overflow-y:scroll;">
+			<div id="IDMAINTABLE" class="col-md-2 no-margin" style="height:1200px;overflow-y:scroll;">
 				<table id="maintable" class="table table-hover">
 					<tbody>
 						<tr><td><div>№</div></td><td><div>Nomer</div></td><td><div>State</div></td></tr>
@@ -58,23 +59,23 @@
 					</tbody>
 				</table>
 			</div>
-			<div class="col-md-8">
-				<div class="col-md-12">
+			<div class="col-md-8 no-margin">
+				<div class="col-md-12 no-margin">
 					<textarea id="mainmemo"></textarea>
 				</div>
-				<div class="col-md-6">
+				<div class="col-md-6 no-margin">
 					<label for="history_list">История:</label>
-					<select multiple id="history_list" class="form-control" style="height:130px">
+					<select multiple id="history_list" class="form-control" style="height:135px">
 						<!--<option>1</option>-->
 					</select>
 				</div>
-				<div class="col-md-6">
+				<div class="col-md-6 no-margin">
 					<button type="button" class="btn btn-primary btn-sm" id="btn_system_delete_sms">Удалить смс</button>
 					<label for="history_text">Текст сообщения:</label>
 					<textarea id="history_text" style="height: 130px;"></textarea>
 				</div>
-			<div id="system_div" class="col-md-12" <!--style="display: none;"-->
-				<div class="col-md-4">
+			<div id="system_div" class="col-md-12 no-margin" <!--style="display: none;"-->
+				<div class="col-md-4 no-margin">
 					<div class="col-md-12">
 						<label for="sendmemo">Команды:</label>
 						<textarea id="sendmemo"></textarea>
@@ -97,43 +98,43 @@
 					</div>
 					
 				</div>
-				<div class="col-md-4">
+				<div class="col-md-4 no-margin">
 					<div class="col-md-12">
 						<label for="recvmemo">Ответы:</label><textarea id="recvmemo"></textarea>
 					</div>
 					<div class="col-md-12">
-						<div class="col-md-6"><button class="btn btn-info btn-block" id="btn_system_testsms" >Тест смс</button></div>
-						<div class="col-md-6"><button class="btn btn-info btn-block" id="btn_system_config_filter" >Filter config</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_testsms" >Тест смс</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_config_filter" >Filter config</button></div>
 						
 					</div>					
 					<div class="col-md-12">
-						<div class="col-md-6"><button class="btn btn-info btn-block" id="btn_system_config_telega" >Telega config</button></div>
-						<div class="col-md-6"><button class="btn btn-info btn-block" id="btn_system_config_url" >URL config</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_config_telega" >Telega config</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_config_url" >URL config</button></div>
 					</div>					
 					<div class="col-md-12">
-						<div class="col-md-6"><button class="btn btn-info btn-block" id="btn_system_config_ports" >List port</button></div>
-						<div class="col-md-6"><button class="btn btn-info btn-block" id="btn_system_config_portsnomera" >List portsnomera</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_config_ports" >List port</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_config_portsnomera" >List portsnomera</button></div>
 					</div>					
 					<div class="col-md-12">
-						<div class="col-md-6"><button class="btn btn-info btn-block" id="btn_system_config_triggers" >Тригер фильтр</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_config_triggers" >Тригер фильтр</button></div>
 						<!--<div class="col-md-6"><button class="btn btn-info btn-block" id="btn_system_config_portsnomera" >List portsnomera</button></div>-->
 					</div>
 				</div>
-				<div class="col-md-4">
+				<div class="col-md-4 no-margin">
 					<div class="col-md-12">
 						<label for="smsmemo">Общее:</label>
 						<textarea id="smsmemo" style="height: 215px;"></textarea>
 					</div>
 					<div class="col-md-12">
-						<div class="col-md-6"><button id="btn_zapros_nomera" type="button" class="btn btn-info btn-sm btn-block">Запрос номера</button></div>
-						<div class="col-md-6"><button id="btn_reset" type="button" class="btn btn-danger btn-sm btn-block">ПЕРЕЗАГРУЗИТЬ</button></div>
+						<div class="col-md-6 no-margin"><button id="btn_zapros_nomera" type="button" class="btn btn-info btn-sm btn-block">Запрос номера</button></div>
+						<div class="col-md-6 no-margin"><button id="btn_reset" type="button" class="btn btn-danger btn-sm btn-block">ПЕРЕЗАГРУЗИТЬ</button></div>
 					</div>					
 					<div class="col-md-12">
-						<div class="col-md-6"><button id="btn_send_sms" type="button" class="btn btn-info btn-sm btn-block">Отправка смс</button></div>
-						<div class="col-md-6"><button id="btn_allsend_sms" type="button" class="btn btn-info btn-sm btn-block">Отправка смс всеми</button></div>
+						<div class="col-md-6 no-margin"><button id="btn_send_sms" type="button" class="btn btn-info btn-sm btn-block">Отправка смс</button></div>
+						<div class="col-md-6 no-margin"><button id="btn_allsend_sms" type="button" class="btn btn-info btn-sm btn-block">Отправка смс всеми</button></div>
 					</div>					
 					<div class="col-md-12">
-						<div class="col-md-6"><button id="btn_allsend_sms_noreg" type="button" class="btn btn-info btn-sm btn-block">Отправка смс нерег.</button></div>
+						<div class="col-md-6 no-margin"><button id="btn_allsend_sms_noreg" type="button" class="btn btn-info btn-sm btn-block">Отправка смс нерег.</button></div>
 					</div>
 				</div>
 			</div>
