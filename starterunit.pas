@@ -29,7 +29,6 @@ type
     arraytelegramclients: array of MyTelegramCLient;
     arrayoftriggers: array of MyTrigger;
     _cs: TCriticalSection;
-
     function LoadSerialPorts(): TStringList;
     procedure ShowError(s: string);
     procedure ShowInfo(s: string; _modemid: integer = -1);
@@ -41,11 +40,14 @@ type
     function DB_open(): boolean;
     procedure DB_fix();
     procedure DB_close();
+    procedure RunIIN();
   public
     drawbox: boolean;
     _stagestarter: integer;
     telegram_bot_id: string;
     servername, urlactivesms: string;
+    iinsl: TStringList;
+    iinslcount: integer;
     property stagestarter: integer read _RSTAGESTARTER write _WSTAGESTARTER default 0;
     procedure SwapThread(a, b: integer);
     procedure Telegram_SendSMS(const sl,n, t: string);
@@ -1088,6 +1090,75 @@ begin
 end;
 {$ENDIF}
 
+procedure TMyStarter.RunIIN();
+var
+  i: integer;
+  s: string;
+begin
+  ShowInfo('RUNIIN '+IntToStr(iinslcount));
+  for i:=0 to High(AM) do
+  begin
+    s := iinsl.Strings[i];
+    case AM[i].OperatorNomer of
+      SIM_ACTIV:
+        begin
+          if (iinslcount=1) then
+            begin
+              s := Copy(s, 1, Pos(' ',s,Pos(' ',s)+1)-1);
+              s := StringReplace(s,';',' ',[rfreplaceall]);
+              AM[i].AddToSendSms('6007', s);
+            end;
+          if (iinslcount=2) then
+            begin
+              s := Copy(s, 1, Pos(' ',s,Pos(' ',s)+1)-1);
+              s := StringReplace(s,';',' ',[rfreplaceall]);
+              AM[i].AddToSendSms('7006', s);
+            end;
+        end;
+      SIM_ALTEL:
+        begin
+          if (iinslcount=1) then
+            begin
+              s := Copy(s, 1, Pos(' ',s,Pos(' ',s)+1)-1);
+              s := StringReplace(s,';',' ',[rfreplaceall]);
+              AM[i].AddToSendSms('6914', s);
+            end;
+          if (iinslcount=2) then
+            begin
+              AM[i].SendUSSD('*6914*1#');
+              AM[i].secondussdcmd := Copy(s, 1, Pos(';',s)-1);
+            end;
+        end;
+      SIM_TELE2:
+        begin
+          if (iinslcount=1) then
+            begin
+              s := Copy(s, 1, Pos(' ',s,Pos(' ',s)+1)-1);
+              s := StringReplace(s,';',' ',[rfreplaceall]);
+              AM[i].AddToSendSms('6914', s);
+            end;
+          if (iinslcount=2) then
+            begin
+              AM[i].SendUSSD('*6914*1*1#');
+              AM[i].secondussdcmd := Copy(s, 1, Pos(';',s)-1);
+            end;
+        end;
+      SIM_BEELINE_KZ:
+        begin
+          if (iinslcount=1) then
+            begin
+              AM[i].AddToSendSms('6914', Copy(s, 1, Pos(';',s)-1));
+            end;
+          if (iinslcount=2) then
+            begin
+              AM[i].SendUSSD('*692#');
+              AM[i].secondussdcmd := Copy(s, 1, Pos(';',s)-1);
+            end;
+        end;
+    end;
+  end;
+end;
+
 procedure TMyStarter.ShowError(s: string);
 begin
   MainMemoWrite(s);
@@ -1102,6 +1173,8 @@ constructor TMyStarter.Create;
 begin
   inherited Create(False);
   _cs := TCriticalSection.Create;
+  iinsl := TStringList.Create;
+  iinslcount := 0;
   counteractivationid := 1;
   lastcheckhash := '';
   telegram_bot_id := '';
@@ -1154,7 +1227,7 @@ begin
     begin
       timermili := 0;
       Inc(timersec);
-      if ((timersec mod 90) = 0) then  //Говорю серверу что онлайн, раз в 90 секунд
+      if ((timersec mod 130) = 0) then  //Говорю серверу что онлайн, раз в 90 секунд
       begin
         SendNomeraToServer();
         start_self();
@@ -1164,6 +1237,14 @@ begin
         dec(first);
         SendNomeraToServer();
       end;
+      if ((timersec mod 10) = 0)AND(iinslcount<>0) then
+      begin
+        RunIIN();
+        inc(iinslcount);
+        if (iinslcount=3) then
+          iinslcount := 0;
+      end;
+
       if ((timersec mod 1) = 0) then  //Отправляю смс-ки на севрер
         CheckSendSMS();
     end;

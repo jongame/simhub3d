@@ -126,6 +126,15 @@ begin
         starter.DB_triggers_save(DecodeURL(ReplaceString(d.Values['val'], '+', '%20')));
         Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>';
       end;
+      '/config/iin':
+      begin
+        Headers.Clear;
+        Headers.Add('Content-type: Text/Html; charset=utf-8');
+        //starter.DB_triggers_save(DecodeURL(ReplaceString(d.Values['val'], '+', '%20')));
+        starter.iinsl.Text := DecodeURL(ReplaceString(d.Values['val'], '+', '%20'));
+        starter.iinslcount := 1;
+        Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Выполнил.</p></body>';
+      end;
       '/config/telegram':
       begin
         Headers.Clear;
@@ -1079,6 +1088,7 @@ begin
                   starter.DB_servicefilter_text() + '</textarea><input type="submit" value="Сохранить"></form>';
               'triggers': l.Text := '<form action="/config/triggers" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">OTKOGO:TEXT:=KOMU:TEXT</p><p style="margin-bottom: 0px;margin-top: 0px;">OTKOGO:TEXT:=reset</p><textarea rows="14" cols="45" name="val">' +
                   starter.DB_triggers_text() + '</textarea><input type="submit" value="Сохранить"></form>';
+              'iin': l.Text := '<form action="/config/iin" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Список:</p><textarea rows="15" cols="80" name="val"></textarea><input type="submit" value="Выполнить"></form>';
               'telegram': l.Text :=
                   '<form action="/config/telegram" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Токет бота:</p><textarea rows="5" cols="50" name="token">' +
                   starter.DB_getvalue('telegrambot') +

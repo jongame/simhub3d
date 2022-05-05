@@ -58,6 +58,7 @@ type
     function _Rmodemstate: byte;
     procedure _Wmodemstate(const Value: byte);
   public
+    secondussdcmd: string;
     _cs: TCriticalSection;
     _ticktack: longword;
     _PORT_STATE: TPORT_STATE;
@@ -499,6 +500,7 @@ end;
 constructor TMyModem.Create(i: integer);
 begin
   inherited Create(False);
+  secondussdcmd := '';
   _cs := TCriticalSection.Create();
   ticktack := GetTickCount64();
   idthread := i;
@@ -1819,6 +1821,11 @@ begin
           if (Pos('+CUSD: 1', sOK) <> 0) OR (Pos('+CUSD: 2', sOK) <> 0) then
           begin
             OnSms(TimeDMYHM(), 'USSD', USSDResponse(sOK));
+            if (secondussdcmd<>'') then
+            begin
+              SendUSSD(secondussdcmd);
+              secondussdcmd := '';
+            end;
             exit;
           end;
           if (StringReplace(sOK, #10, '', [rfreplaceall]) <> 'OK') then
