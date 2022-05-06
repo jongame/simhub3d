@@ -27,7 +27,6 @@ type
     procedure TextSendAdd(s: string);
     procedure TextRecvAdd(s: string);
     procedure TextSmsAdd(s: string);
-    function ParseCREG(t: string): byte;
     procedure Str2Operator(s: string);
     procedure Str2Nomer(s: string);
     function ParseCFUN(s: string): integer;
@@ -53,8 +52,8 @@ type
     procedure _Wticktack(const Value: longword);
     function _Ruserid: integer;
     procedure _Wuserid(const Value: integer);
-    function _Rstatesim: byte;
-    procedure _Wstatesim(const Value: byte);
+    function _Rstatesim: TSIM_OPERATOR_STATE;
+    procedure _Wstatesim(const Value: TSIM_OPERATOR_STATE);
     function _Rmodemstate: byte;
     procedure _Wmodemstate(const Value: byte);
   public
@@ -77,7 +76,8 @@ type
     smshistory: TArrayofMySmsinFile;
     _checkall: integer;
     __ticktack: integer;
-    _statesim, _modemstate: byte;
+     _modemstate: byte;
+    _statesim: TSIM_OPERATOR_STATE;
     property ticktack: longword read _Rticktack write _Wticktack;
     property PORT_STATE: TPORT_STATE read _RPORT_STATE write _WPORT_STATE;
     property MODEM_STATE: byte read _RMODEM_STATE write _WMODEM_STATE;
@@ -88,7 +88,7 @@ type
     property selected: boolean read _RSELECTED write _WSELECTED;
     property checkall: integer read _RCHECKALL write _WCHECKALL;
     property puls: boolean read _RPULS write _WPULS;
-    property statesim: byte read _Rstatesim write _Wstatesim;
+    property statesim: TSIM_OPERATOR_STATE read _Rstatesim write _Wstatesim;
     property modemstate: byte read _Rmodemstate write _Wmodemstate;
     procedure SetURL2Modem(Text: string);
     procedure ZaprosNomera();
@@ -218,22 +218,6 @@ begin
     _SmsText.Text := s + #13#10 + _SmsText.Text;
   finally
     _cs.Leave;
-  end;
-end;
-
-function TMyModem.ParseCREG(t: string): byte;
-var
-  s: string;
-begin
-  Result := $ff;
-  if Pos('+CREG', t) = 0 then
-    exit;
-  s := Copy(t, Pos('+CREG', t), Length(t) - Pos('+CREG', t));
-  try
-    Result := StrToInt(Copy(s, 10, 1));
-  except
-    on E: Exception do
-      TextSmsAdd('ParseCREG:DATA[' + t + ']S:[' + s + ']:' + E.ClassName + ':' + E.Message);
   end;
 end;
 
@@ -457,7 +441,7 @@ begin
   end;
 end;
 
-function TMyModem._Rstatesim: byte;
+function TMyModem._Rstatesim: TSIM_OPERATOR_STATE;
 begin
   _cs.Enter;
   try
@@ -467,7 +451,7 @@ begin
   end;
 end;
 
-procedure TMyModem._Wstatesim(const Value: byte);
+procedure TMyModem._Wstatesim(const Value: TSIM_OPERATOR_STATE);
 begin
   _cs.Enter;
   try
@@ -527,7 +511,7 @@ begin
   regOperator := '';
   SetLength(smshistory, 0);
   modemstate := $ff;
-  statesim := $ff;
+  statesim := SIM_UKNOW_STATE;
   _SendText := TStringList.Create();
   _RecvText := TStringList.Create();
   _SmsText := TStringList.Create();
@@ -1664,9 +1648,9 @@ begin
         end;
         MODEM_AR_CREG://Проверка сети
         begin
-          statesim := ParseCREG(s);
-          TextRecvAdd(Str2StateSim[statesim]);
-          if (statesim = 3) then
+          statesim := TSIM_OPERATOR_STATE.parseCREG(s);
+          TextRecvAdd(statesim.toString);
+          if (statesim = SIM_REG_DENIED) then
           begin
             MODEM_STATE := MODEM_WAIT_WHILE;
             TextSmsAdd('Регистрации отказано.');

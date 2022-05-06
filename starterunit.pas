@@ -540,7 +540,7 @@ begin
       begin
         if (AM[i].MODEM_STATE <> MODEM_MAIN_WHILE) or (AM[i].nomer = Nomer_Neopredelen) or (AM[i].nomer = data_neopredelen) or (AM[i].operatorNomer = SIM_UNKNOWN) then
           continue;
-        if (AM[i].statesim <> 1) AND (AM[i].statesim <> 5) then
+        if (AM[i].statesim <> SIM_HOME_NETWORK) AND (AM[i].statesim <> SIM_ROAMING) then
           continue;
         t := SMSCheckAllService(i);
         Arrays[AM[i].nomer] := CreateJSONArray([operator_names_to_activate[AM[i].operatorNomer],t,i+1]);
@@ -618,6 +618,7 @@ var
 begin
   stage := 0;
   Result := False;
+  _cs.Enter;
   dbc := TZConnection.Create(nil);
   dbq := TZQuery.Create(nil);
   dbc.Database := extractfilepath(ParamStr(0)) + 'data.db';
@@ -652,6 +653,7 @@ begin
     on E: Exception do
       ShowInfo(E.ClassName + ':' + E.Message + IntToStr(stage));
   end;
+  _cs.Leave;
 end;
 
 procedure TMyStarter.DB_fix();
@@ -783,12 +785,17 @@ begin
   Result := '';
   _cs.Enter;
   try
+    try
     dbq.Close;
     dbq.SQL.Text := 'SELECT * FROM "keyvalue" WHERE "key" = ''' + key + ''' LIMIT 1;';
     dbq.Open;
     if dbq.RecordCount <> 0 then
       Result := dbq.FieldByName('value').AsString;
     dbq.Close;
+    except
+      on E: Exception do
+        debuglog('getvalue: '+E.ClassName + ':' + E.Message + '|'+key+'|'+Result);
+    end;
   finally
     _cs.Leave;
   end;
