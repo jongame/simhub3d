@@ -42,6 +42,7 @@ type
     procedure DB_close();
     procedure RunIIN();
   public
+    bindimei: boolean;
     drawbox: boolean;
     _stagestarter: integer;
     telegram_bot_id: string;
@@ -635,6 +636,7 @@ begin
       dbq.SQL.Text := 'CREATE INDEX "n" ON "sms" ("nomer" ASC);';
       dbq.ExecSQL;
       DB_setvalue('ignore', '');
+      DB_setvalue('bindimei', 'false');
       DB_setvalue('urlactivesms', '');
       DB_setvalue('servername', 'new server');
     end;
@@ -785,17 +787,12 @@ begin
   Result := '';
   _cs.Enter;
   try
-    try
     dbq.Close;
     dbq.SQL.Text := 'SELECT * FROM "keyvalue" WHERE "key" = ''' + key + ''' LIMIT 1;';
     dbq.Open;
     if dbq.RecordCount <> 0 then
       Result := dbq.FieldByName('value').AsString;
     dbq.Close;
-    except
-      on E: Exception do
-        debuglog('getvalue: '+E.ClassName + ':' + E.Message + '|'+key+'|'+Result);
-    end;
   finally
     _cs.Leave;
   end;
@@ -882,7 +879,9 @@ begin
   _cs.Enter;
   try
     dbq.Close;
-    dbq.SQL.Text := 'REPLACE INTO "keyvalue" ("key", "value") VALUES (''' + key + ''', ''' + Value + ''');';
+    dbq.SQL.Text := 'REPLACE INTO "keyvalue" ("key", "value") VALUES (:key, :value);';
+    dbq.ParamByName('key').AsString := key;
+    dbq.ParamByName('value').AsString := Value;
     dbq.ExecSQL;
   finally
     _cs.Leave;
@@ -1187,6 +1186,7 @@ begin
   telegram_bot_id := '';
   drawbox := False;
   serverwork := False;
+  bindimei := true;
   Randomize;
 end;
 
@@ -1209,6 +1209,8 @@ begin
     ShowInfo('Ошибка файла data.db');
     exit; //Ошибка бд.
   end;
+  if DB_getvalue('bindimei')='false' then
+    bindimei := false else bindimei := true;
   DB_fix();
   StartALL();
   DB_servicefilter_load();

@@ -15,7 +15,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 110;
+  version = 111;
 
 var
   timestart: string;
@@ -28,7 +28,6 @@ var
 
   Last10sms: array of array of string;
   AM: array of TMyModem;
-
   starter: TMyStarter = nil;
   starterwork: boolean = True;
   serverwork: boolean = True;
@@ -131,6 +130,7 @@ begin
     sleep(50);
   for i := Low(AM) to High(AM) do
     AM[i].Terminate;
+  sleep(100);
   Deinit();
 end;
 

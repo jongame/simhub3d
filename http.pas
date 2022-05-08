@@ -5,7 +5,7 @@ unit http;
 interface
 
 uses
-  Classes, blcksock, Synsock, Synautil, synacode, SysUtils, lazutf8, jsonparser, fpjson, myfunctions, httpsend, RegExpr;
+  Classes, blcksock, Synsock, Synautil, synacode, SysUtils, lazutf8, jsonparser, fpjson, myfunctions, httpsend, RegExpr, strutils;
 
 type
   CommandAndArgument = array of string;
@@ -148,6 +148,17 @@ begin
       begin
         Headers.Clear;
         Headers.Add('Content-type: Text/Html; charset=utf-8');
+        if (d.IndexOfName('imei')<>-1) then
+        begin
+          starter.bindimei := true;
+          starter.DB_setvalue('bindimei', 'true');
+        end
+        else
+        begin
+          starter.bindimei := false;
+          starter.DB_setvalue('bindimei', 'false');
+        end;
+
         if setlistports(DecodeURL(ReplaceString(d.Values['val'], '+', '%20'))) then
           Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>'
         else
@@ -657,6 +668,8 @@ begin
         if (t.Strings[i] = AM[j].scom) then
         begin
           starter.SwapThread(i, j);
+          if starter.bindimei=false then
+            starter.DB_setvalue(t.Strings[i], IntToStr(i));
           AM[j].SaveToDb();
           AM[i].SaveToDb(True);
         end;
@@ -730,14 +743,15 @@ begin
     while (True) do
     begin
       CreateSocket;
-      setLinger(True, 10000);
+      setLinger(True, 1000);
       bind('0.0.0.0', '80');
       listen;
+
       if (GetLocalSinPort = 80) then
         break;
-      sleep(2500);
+      sleep(500);
       sock.CloseSocket;
-      sleep(2500);
+      sleep(500);
     end;
     MainMemoWrite('HTTP запущен.');
     repeat
@@ -749,7 +763,8 @@ begin
         if lastError = 0 then
           TTCPHttpThrd.Create(ClientSock);
       end;
-    until False;
+    until serverwork=false;
+    CloseSocket();
   end;
 end;
 
@@ -1095,7 +1110,7 @@ begin
                   '</textarea><p style="margin-bottom: 0px;margin-top: 0px;">Телеграм клиенты:</p><textarea rows="5" cols="50" name="telegramclients">' +
                   starter.DB_telegramclient_text() + '</textarea><input type="submit" value="Сохранить"></form>';
               'ports': l.Text := '<form action="/config/ports" method="post"><textarea rows="10" cols="50" name="val">' +
-                  getlistports() + '</textarea><p style="margin-bottom: 0px;margin-top: 0px;">Игнорировать порты:</p><textarea rows="2" cols="50" name="ignoreval">' +
+                  getlistports() + '</textarea><br><input type="checkbox" '+ifthen(starter.bindimei, 'checked ', '')+'name="imei" value="1">Привязать по IMEI<br><p style="margin-bottom: 0px;margin-top: 0px;">Игнорировать порты:</p><textarea rows="2" cols="50" name="ignoreval">' +
                   starter.DB_getvalue('ignore') + '</textarea><input type="submit" value="Сохранить"></form>';
               'portsimei': l.Text := '<form action="/config/portsimei" method="post"><textarea rows="15" cols="80" name="val">' +
                   getlistportsimei() + '</textarea></form>';
@@ -1129,7 +1144,7 @@ begin
                         if (AM[i].nomer = Nomer_Neopredelen) or (AM[i].nomer = data_neopredelen) or (AM[i].operatorNomer = SIM_UNKNOWN) then
                           continue;
                         ts := starter.SMSCheckAllService(i);
-                        if (Pos('aa',ts)=0) then
+                          if (Pos('aa',ts)=0) then
                           continue;
                         Arrays['nomera'].Add(AM[i].nomer);
                       end;

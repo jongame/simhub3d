@@ -1048,12 +1048,10 @@ begin
   s := starter.DB_getvalue(IMEI);
   if ((s <> '')AND(force=false)) then
   begin
-
     starter.DB_setvalue(IMEI, ParseConfigData(s) + ',' + nomer + ',' + ICC)
   end
   else
   begin
-    debuglog('s:'+s+' | ' + IMEI + ' ' + IntToStr(idthread + 1) + ',' + nomer + ',' + ICC,'resetport.txt');
     starter.DB_setvalue(IMEI, IntToStr(idthread + 1) + ',' + nomer + ',' + ICC);
   end;
 end;
@@ -1270,6 +1268,16 @@ begin
     MODEM_NULL:
     begin
       try
+        if (starter.bindimei=false) then
+        begin
+          tmps := starter.DB_getvalue(scom);
+          if (tmps<>'') then
+          begin
+            i := StrToInt(tmps);
+            if ((i>=0)AND(i<=High(AM))) then
+              starter.SwapThread(idthread, i);
+          end;
+        end;
         Serial := TBlockSerial.Create;
         Serial.RaiseExcept := True;
         Serial.LinuxLock := True;
@@ -1468,8 +1476,9 @@ begin
       if (tmps <> '') then
       begin
         i := StrToInt(ParseConfigData(tmps)) - 1;
-        if ((i>=0)AND(i<=High(AM))) then
-          starter.SwapThread(idthread, i);
+        if starter.bindimei then
+          if ((i>=0)AND(i<=High(AM))) then
+            starter.SwapThread(idthread, i);
         nomer := ParseConfigData(tmps);
         ICC := ParseConfigData(tmps);
       end;

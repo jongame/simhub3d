@@ -227,7 +227,6 @@ const
   Nomer_Neopredelen = 'Не_Определен';
   data_neopredelen = 'Не_Загружено';
 
-  MYVERSION = 51;
   MYAPPNAME = 'SIMHUB3';
 
   //Типы фильтров
