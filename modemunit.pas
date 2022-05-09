@@ -57,6 +57,7 @@ type
     function _Rmodemstate: byte;
     procedure _Wmodemstate(const Value: byte);
   public
+    newsim: boolean;
     secondussdcmd: string;
     _cs: TCriticalSection;
     _ticktack: longword;
@@ -515,6 +516,7 @@ begin
   _SendText := TStringList.Create();
   _RecvText := TStringList.Create();
   _SmsText := TStringList.Create();
+  newsim := false;
 end;
 
 destructor TMyModem.Destroy;
@@ -1109,6 +1111,20 @@ begin
 
   SMSHistoryLoadorClear();
   Checkall := 1;
+  try
+    if Length(smshistory)=0 then
+      exit;
+    if (DateTimeToUnix(Now())-DateTimeToUnix(StrToDateTime(StringReplace(smshistory[0].datetime, '-', '-', [rfreplaceall]))))<600 then
+    begin
+      TextSmsAdd('Новая сим, 10 мин');
+      newsim := true;
+    end;
+  except
+    on E: Exception do
+    begin
+      debuglog(smshistory[0].datetime+'!' + E.ClassName + ':' + E.Message);
+    end;
+  end;
 end;
 
 procedure TMyModem.ShowSms(a, b: string);

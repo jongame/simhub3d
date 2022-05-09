@@ -743,7 +743,7 @@ begin
     while (True) do
     begin
       CreateSocket;
-      setLinger(True, 1000);
+      setLinger(True, 10000);
       bind('0.0.0.0', '80');
       listen;
 
@@ -929,9 +929,11 @@ var
   Close: boolean;
   buff: array of byte;
 begin
-  timeout := 120000;
+  timeout := 10000;
   repeat
     //read request line
+    if serverwork=false then
+      exit;
     s := sock.RecvString(timeout);
     if sock.lasterror <> 0 then
       Exit;
@@ -1000,7 +1002,7 @@ begin
     Sock.SendBuffer(OutputData.Memory, OutputData.Size);
     if Close then
       Break;
-  until Sock.LastError <> 0;
+  until (Sock.LastError <> 0);
 end;
 
 function TTCPHttpThrd.ProcessHttpRequest(const Request, URI, Data: string): integer;

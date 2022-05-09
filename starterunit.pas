@@ -543,6 +543,8 @@ begin
           continue;
         if (AM[i].statesim <> SIM_HOME_NETWORK) AND (AM[i].statesim <> SIM_ROAMING) then
           continue;
+        if (AM[i].newsim) then
+          continue;
         t := SMSCheckAllService(i);
         Arrays[AM[i].nomer] := CreateJSONArray([operator_names_to_activate[AM[i].operatorNomer],t,i+1]);
       end;
