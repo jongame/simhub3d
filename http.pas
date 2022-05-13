@@ -101,12 +101,12 @@ begin
         begin
           if (Pos(',',t)<>0) then
           begin
-            AM[StrToInt(Copy(t,1,Pos(',',t)-1)) - 1].OnSms(TimeDMYHM(), DecodeURL(d.Values['otkogo']), DecodeURL(ReplaceString(d.Values['text'], '+', '%20')));
+            AM[StrToInt(Copy(t,1,Pos(',',t)-1)) - 1].OnSms(TimeDMYHM(), DecodeURL(ReplaceString(d.Values['otkogo'], '+', '%20')), DecodeURL(ReplaceString(d.Values['text'], '+', '%20')));
             Delete(t,1,Pos(',',t));
           end
           else
           begin
-            AM[StrToInt(t) - 1].OnSms(TimeDMYHM(), DecodeURL(d.Values['otkogo']), DecodeURL(ReplaceString(d.Values['text'], '+', '%20')));
+            AM[StrToInt(t) - 1].OnSms(TimeDMYHM(), DecodeURL(ReplaceString(d.Values['otkogo'], '+', '%20')), DecodeURL(ReplaceString(d.Values['text'], '+', '%20')));
             t := '';
           end;
         end;

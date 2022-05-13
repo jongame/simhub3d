@@ -149,14 +149,15 @@ begin
     //Казахстан
     'ALTEL': OperatorNomer := SIM_ALTEL;
     'KCELL': OperatorNomer := SIM_KCELL;
-    'Astelit': OperatorNomer := SIM_ASTELIT;
-    'LIVE:)': OperatorNomer := SIM_LIFE;
+    'ASTELIT': OperatorNomer := SIM_ASTELIT;
+    'LIVE:)', 'LIFECELL': OperatorNomer := SIM_LIFE;
     'ACTIV': OperatorNomer := SIM_ACTIV;
     'BEELINE KZ': OperatorNomer := SIM_BEELINE_KZ;
     //Украина
     'UA-KYIVSTAR', 'KYIVSTAR': OperatorNomer := SIM_KYIVSTAR;
     'MTS UKR': OperatorNomer := SIM_MTS_UKR;
     'UMC': OperatorNomer := SIM_UMC_UKR;
+    'YEZZZ!': OperatorNomer := SIM_YEZZZ;
     //Белоруссия
     'MTS BY': OperatorNomer := SIM_MTCBY;
     'BY VELCOM': OperatorNomer := SIM_VELCOM;
@@ -542,12 +543,13 @@ begin
     SIM_KCELL: SendUSSD('*114#');
     SIM_ALTEL: SendUSSD('*802#');
     SIM_ASTELIT: SendUSSD('*114#');
-    SIM_LIFE: SendUSSD('*114#');
+    SIM_LIFE: SendUSSD('**161#');
     SIM_ACTIV: SendUSSD('*114#');
 
     SIM_KYIVSTAR: SendUSSD('*161#');
     SIM_UMC_UKR: SendUSSD('*161#');
     SIM_MTS_UKR: SendUSSD('*161#');
+    SIM_YEZZZ: SendUSSD('*161#');
 
     SIM_VELCOM: SendUSSD('*147#');
     SIM_MTCBY: SendUSSD('*147#');

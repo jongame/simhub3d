@@ -140,10 +140,10 @@ type
 type
   TPORT_STATE = (PORT_CREATE, PORT_WAIT, PORT_WORK, PORT_RESTART, PORT_DISCONNECT, PORT_ZAPROS_NOMERA, PORT_ZAPROS_NOMERA_IZ_SIM, PORT_ACTIV_NOMERA, PORT_DEACTIV_NOMERA, PORT_EXIT);
   TSIM_OPERATOR = (SIM_UNKNOWN, SIM_MTS, SIM_BEELINE, SIM_MEGAFON, SIM_TELE2, SIM_KCELL, SIM_ALTEL, SIM_ASTELIT, SIM_LIFE, SIM_ACTIV,
-    SIM_KYIVSTAR, SIM_MTS_UKR, SIM_UMC_UKR, SIM_MTCBY, SIM_VELCOM, SIM_BEELINE_KZ);
+    SIM_KYIVSTAR, SIM_MTS_UKR, SIM_UMC_UKR, SIM_YEZZZ, SIM_MTCBY, SIM_VELCOM, SIM_BEELINE_KZ);
   TSIMHUB_MODEL = (MODEL_UNKOWN, Q2403, TC35i, MC55, M35, M590);
   TSIM_OPERATOR_STATE = (SIM_NOT_REG_NOT_SEARCH, SIM_HOME_NETWORK, SIM_NOT_REG_SEARCH, SIM_REG_DENIED, SIM_UKNOW_STATE, SIM_ROAMING);
-
+                                                                    //199153525
   { TSIM_OPERATOR_STATE_HELPER }
 
   TSIM_OPERATOR_STATE_HELPER = type helper for TSIM_OPERATOR_STATE
@@ -220,9 +220,9 @@ const
   MODEM_FATAL_ERROR = 199;
 
   operator_names: array[TSIM_OPERATOR] of string = ('Неизвестно', 'MTS', 'BEELINE', 'MEGAFON', 'TELE2', 'KCELL', 'ALTEL', 'ASTELIT',
-    'LIFE', 'ACTIV', 'KYIVSTAR', 'MTS_UKR', 'UMC_UKR', 'MTCBY', 'VELCOM', 'BEELINE_KZ');
+    'LIFE', 'ACTIV', 'KYIVSTAR', 'MTS_UKR', 'UMC_UKR','YEZZZ', 'MTCBY', 'VELCOM', 'BEELINE_KZ');
   operator_names_to_activate: array[TSIM_OPERATOR] of string = ('Неизвестно', 'mts', 'beeline', 'megafon', 'tele2', 'kcell', 'altel', 'astelit',
-    'life', 'activ', 'kyivstar', 'mts_ukr', 'umc_ukr', 'mtsby', 'velcom', 'beeline_kz');
+    'life', 'activ', 'kyivstar', 'mts_ukr', 'umc_ukr', 'yezzz', 'mtsby', 'velcom', 'beeline_kz');
 
   Nomer_Neopredelen = 'Не_Определен';
   data_neopredelen = 'Не_Загружено';
