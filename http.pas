@@ -130,7 +130,6 @@ begin
       begin
         Headers.Clear;
         Headers.Add('Content-type: Text/Html; charset=utf-8');
-        //starter.DB_triggers_save(DecodeURL(ReplaceString(d.Values['val'], '+', '%20')));
         starter.iinsl.Text := DecodeURL(ReplaceString(d.Values['val'], '+', '%20'));
         starter.iinslcount := 1;
         Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Выполнил.</p></body>';
@@ -412,7 +411,7 @@ begin
             Free;
           end;
           {$ELSE}
-
+            start_self();
           {$ENDIF}
         except
           on E: Exception do
