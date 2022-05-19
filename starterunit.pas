@@ -21,6 +21,9 @@ type
   private
     dbq: TZQuery;
     dbc: TZConnection;
+    dbq_sms: TZQuery;
+    dbc_sms: TZConnection;
+    dbq_used: ^TZQuery;
     counteractivationid: integer;
     lastcheckhash: string;
     arrayofsmstosend: TArraysmstosend;
@@ -46,7 +49,7 @@ type
     drawbox: boolean;
     _stagestarter: integer;
     telegram_bot_id: string;
-    servername, urlactivesms: string;
+    servername, urlactivesms, urldatabasesms: string;
     iinsl: TStringList;
     iinslcount: integer;
     property stagestarter: integer read _RSTAGESTARTER write _WSTAGESTARTER default 0;
@@ -212,13 +215,13 @@ procedure TMyStarter.DB_addsms(nomer, datetime, otkogo, Text: string);
 begin
   _cs.Enter;
   try
-    dbq.Close;
-    dbq.SQL.Text := 'INSERT INTO "sms" ("nomer", "datetime", "otkogo", "text") VALUES (:nomer, :datetime, :otkogo, :text);';
-    dbq.ParamByName('nomer').AsString := nomer;
-    dbq.ParamByName('datetime').AsString := datetime;
-    dbq.ParamByName('otkogo').AsString := otkogo;
-    dbq.ParamByName('text').AsString := Text;
-    dbq.ExecSQL;
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'INSERT INTO `sms` (`nomer`, `datetime`, `otkogo`, `text`) VALUES (:nomer, :datetime, :otkogo, :text);';
+    dbq_used^.ParamByName('nomer').AsString := nomer;
+    dbq_used^.ParamByName('datetime').AsString := datetime;
+    dbq_used^.ParamByName('otkogo').AsString := otkogo;
+    dbq_used^.ParamByName('text').AsString := Text;
+    dbq_used^.ExecSQL;
   finally
     _cs.Leave;
   end;
@@ -228,13 +231,13 @@ procedure TMyStarter.DB_deletesms(nomer, datetime, otkogo, Text: string);
 begin
   _cs.Enter;
   try
-    dbq.Close;
-    dbq.SQL.Text := 'DELETE FROM "sms" WHERE ("nomer"=:nomer)AND("datetime"=:datetime)AND("otkogo"=:otkogo)AND("text"=:text);';
-    dbq.ParamByName('nomer').AsString := nomer;
-    dbq.ParamByName('datetime').AsString := datetime;
-    dbq.ParamByName('otkogo').AsString := otkogo;
-    dbq.ParamByName('text').AsString := Text;
-    dbq.ExecSQL;
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE (`nomer`=:nomer)AND(`datetime`=:datetime)AND(`otkogo`=:otkogo)AND(`text`=:text);';
+    dbq_used^.ParamByName('nomer').AsString := nomer;
+    dbq_used^.ParamByName('datetime').AsString := datetime;
+    dbq_used^.ParamByName('otkogo').AsString := otkogo;
+    dbq_used^.ParamByName('text').AsString := Text;
+    dbq_used^.ExecSQL;
   finally
     _cs.Leave;
   end;
@@ -244,10 +247,10 @@ procedure TMyStarter.DB_deletesms(id: integer);
 begin
   _cs.Enter;
   try
-    dbq.Close;
-    dbq.SQL.Text := 'DELETE FROM "sms" WHERE ("id"=:id);';
-    dbq.ParamByName('id').AsString := inttostr(id);
-    dbq.ExecSQL;
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE (`id`=:id);';
+    dbq_used^.ParamByName('id').AsString := inttostr(id);
+    dbq_used^.ExecSQL;
   finally
     _cs.Leave;
   end;
@@ -256,23 +259,40 @@ end;
 procedure TMyStarter.DB_loadsms(idthread: integer);
 var
   i: integer;
+  tc: integer;
 begin
   _cs.Enter;
   try
-    dbq.Close;
-    dbq.SQL.Text := 'SELECT * FROM "sms" WHERE "nomer"=''' + AM[idthread].nomer + ''' ORDER BY "id" DESC LIMIT 1000;';
-    dbq.Open;
-    SetLength(AM[idthread].smshistory, dbq.RecordCount);
-    for i := dbq.RecordCount - 1 downto 0 do
+    if (urldatabasesms<>'')  then
     begin
-      AM[idthread].smshistory[i].idinbase := dbq.FieldByName('id').AsInteger;
-      AM[idthread].smshistory[i].datetime := dbq.FieldByName('datetime').AsString;
-      AM[idthread].smshistory[i].otkogo := dbq.FieldByName('otkogo').AsString;
-      AM[idthread].smshistory[i].Text := dbq.FieldByName('text').AsString;
-      dbq.Next;
+      dbq.Close;
+      dbq.SQL.Text := 'SELECT * FROM `sms` WHERE `nomer`=''' + AM[idthread].nomer + ''' ORDER BY `id` DESC LIMIT 1000;';
+      dbq.Open;
+      SetLength(AM[idthread].smshistory, dbq.RecordCount);
+      for i := dbq.RecordCount - 1 downto 0 do
+      begin
+        AM[idthread].smshistory[i].idinbase := dbq.FieldByName('id').AsInteger;
+        AM[idthread].smshistory[i].datetime := dbq.FieldByName('datetime').AsString;
+        AM[idthread].smshistory[i].otkogo := dbq.FieldByName('otkogo').AsString;
+        AM[idthread].smshistory[i].Text := dbq.FieldByName('text').AsString;
+        dbq.Next;
+      end;
+    end;
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'SELECT * FROM `sms` WHERE `nomer`=''' + AM[idthread].nomer + ''' ORDER BY `id` DESC LIMIT 1000;';
+    dbq_used^.Open;
+    tc := Length(AM[idthread].smshistory);
+    SetLength(AM[idthread].smshistory, tc + dbq_used^.RecordCount);
+    for i := (dbq_used^.RecordCount + tc) - 1 downto tc do
+    begin
+      AM[idthread].smshistory[i].idinbase := dbq_used^.FieldByName('id').AsInteger;
+      AM[idthread].smshistory[i].datetime := dbq_used^.FieldByName('datetime').AsString;
+      AM[idthread].smshistory[i].otkogo := dbq_used^.FieldByName('otkogo').AsString;
+      AM[idthread].smshistory[i].Text := dbq_used^.FieldByName('text').AsString;
+      dbq_used^.Next;
     end;
   finally
-    dbq.Close;
+    dbq_used^.Close;
     _cs.Leave;
   end;
 end;
@@ -283,23 +303,23 @@ var
 begin
   _cs.Enter;
   try
-    dbq.Close;
-    dbq.SQL.Text := 'SELECT * FROM "triggers";';
-    dbq.Open;
-    while not dbq.EOF do
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'SELECT * FROM `triggers`;';
+    dbq_used^.Open;
+    while not dbq_used^.EOF do
     begin
       SetLength(arrayoftriggers, Length(arrayoftriggers) + 1);
-      s := dbq.FieldByName('input').AsString;
+      s := dbq_used^.FieldByName('input').AsString;
       arrayoftriggers[High(arrayoftriggers)].input.otkogo := Copy(s, 1, Pos(':', s) - 1);
       Delete(s, 1, Pos(':', s));
       arrayoftriggers[High(arrayoftriggers)].input.textsms := Copy(s, 1, Pos(':', s) - 1);
       Delete(s, 1, Pos(':', s));
       arrayoftriggers[High(arrayoftriggers)].input.cutsms := s;
-      arrayoftriggers[High(arrayoftriggers)].output := dbq.FieldByName('output').AsString;
-      dbq.Next;
+      arrayoftriggers[High(arrayoftriggers)].output := dbq_used^.FieldByName('output').AsString;
+      dbq_used^.Next;
     end;
   finally
-    dbq.Close;
+    dbq_used^.Close;
     _cs.Leave;
   end;
 end;
@@ -326,16 +346,16 @@ begin
       Delete(s, 1, Pos('=', s));
       arrayoftriggers[i].output := s;
     end;
-    dbq.Close;
-    dbq.SQL.Text := 'DELETE FROM "triggers";';
-    dbq.ExecSQL;
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'DELETE FROM `triggers`;';
+    dbq_used^.ExecSQL;
     for i:=0 to High(arrayoftriggers) do
     begin
-      dbq.SQL.Text := 'INSERT OR IGNORE INTO "triggers"("id", "input", "output") VALUES (:id, :input, :output);';
-      dbq.ParamByName('id').AsInteger := i + 1;
-      dbq.ParamByName('input').AsString := arrayoftriggers[i].input.otkogo + ':' + arrayoftriggers[i].input.textsms + ':' + arrayoftriggers[i].input.cutsms;
-      dbq.ParamByName('output').AsString := arrayoftriggers[i].output;
-      dbq.ExecSQL;
+      dbq_used^.SQL.Text := 'INSERT INTO `triggers`(`id`, `input`, `output`) VALUES (:id, :input, :output);';
+      dbq_used^.ParamByName('id').AsInteger := i + 1;
+      dbq_used^.ParamByName('input').AsString := arrayoftriggers[i].input.otkogo + ':' + arrayoftriggers[i].input.textsms + ':' + arrayoftriggers[i].input.cutsms;
+      dbq_used^.ParamByName('output').AsString := arrayoftriggers[i].output;
+      dbq_used^.ExecSQL;
     end;
   finally
     sl.Free;
@@ -371,13 +391,16 @@ var
 begin
   _cs.Enter;
   try
-    dbq.Close;
+    dbq_used^.Close;
     for i := 0 to 18 do
     begin
-      dbq.SQL.Text := 'INSERT OR IGNORE INTO "filter_service"("service", "filter") VALUES (:service, :filter);';
-      dbq.ParamByName('service').AsString := IntToTagServiceActivation(i);
-      dbq.ParamByName('filter').AsString := 'EXAMPLE_OTKOGO:EXAMPLE_TEXT:';
-      dbq.ExecSQL;
+      if urldatabasesms<>'' then
+        dbq_used^.SQL.Text := 'INSERT IGNORE INTO `filter_service`(`service`, `filter`) VALUES (:service, :filter);'
+      else
+        dbq_used^.SQL.Text := 'INSERT OR IGNORE INTO `filter_service`("service", "filter") VALUES (:service, :filter);';
+      dbq_used^.ParamByName('service').AsString := IntToTagServiceActivation(i);
+      dbq_used^.ParamByName('filter').AsString := 'EXAMPLE_OTKOGO:EXAMPLE_TEXT:';
+      dbq_used^.ExecSQL;
     end;
   finally
     _cs.Leave;
@@ -386,15 +409,15 @@ begin
   _cs.Enter;
   t := TStringList.Create;
   try
-    dbq.Close;
-    dbq.SQL.Text := 'SELECT * FROM "filter_service";';
-    dbq.Open;
-    while not dbq.EOF do
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'SELECT * FROM `filter_service`;';
+    dbq_used^.Open;
+    while not dbq_used^.EOF do
     begin
-      t.Text := dbq.FieldByName('filter').AsString;
+      t.Text := dbq_used^.FieldByName('filter').AsString;
       if (t.Text='') then
         t.Text := 'EXAMPLE_OTKOGO:EXAMPLE_TEXT:';
-      i := TagServiceToIntActivation(dbq.FieldByName('service').AsString);
+      i := TagServiceToIntActivation(dbq_used^.FieldByName('service').AsString);
       if (i <> -1) then
       begin
         SetLength(arrayoffilteractivation[i], t.Count);
@@ -408,10 +431,10 @@ begin
           arrayoffilteractivation[i, j].cutsms := s;
         end;
       end;
-      dbq.Next;
+      dbq_used^.Next;
     end;
   finally
-    dbq.Close;
+    dbq_used^.Close;
     t.Free;
     _cs.Leave;
   end;
@@ -443,10 +466,10 @@ begin
           Delete(temp_string, 1, Pos('=', temp_string));
           t2.Add(temp_string);
         end;
-      dbq.SQL.Text := 'UPDATE "filter_service" SET "filter" = :filter WHERE "service" = :service;';
-      dbq.ParamByName('service').AsString := IntToTagServiceActivation(i);
-      dbq.ParamByName('filter').AsString := t2.Text;
-      dbq.ExecSQL;
+      dbq_used^.SQL.Text := 'UPDATE `filter_service` SET `filter` = :filter WHERE `service` = :service;';
+      dbq_used^.ParamByName('service').AsString := IntToTagServiceActivation(i);
+      dbq_used^.ParamByName('filter').AsString := t2.Text;
+      dbq_used^.ExecSQL;
     end;
   finally
     t.Free;
@@ -618,10 +641,16 @@ end;
 function TMyStarter.DB_open(): boolean;
 var
   stage: byte;
+  s: string;
 begin
   stage := 0;
   Result := False;
   _cs.Enter;
+  dbc_sms := TZConnection.Create(nil);
+  dbq_sms := TZQuery.Create(nil);
+  dbc_sms.Protocol := 'MariaDB-10';
+  dbq_sms.Connection := dbc_sms;
+
   dbc := TZConnection.Create(nil);
   dbq := TZQuery.Create(nil);
   dbc.Database := extractfilepath(ParamStr(0)) + 'data.db';
@@ -630,27 +659,70 @@ begin
   try
     if (not FileExists(extractfilepath(ParamStr(0)) + 'data.db')) then
     begin //Создаём таблицы
-      dbq.SQL.Text := 'CREATE TABLE "keyvalue" ("key"  TEXT NOT NULL, "value"  TEXT, PRIMARY KEY ("key"));';
-      dbq.ExecSQL;
-      dbq.SQL.Text :=
-        'CREATE TABLE "sms" ("id"  INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL DEFAULT 0, "nomer"  TEXT(16) NOT NULL, "datetime"  TEXT, "otkogo"  TEXT, "text"  TEXT);';
-      dbq.ExecSQL;
-      dbq.SQL.Text := 'CREATE INDEX "n" ON "sms" ("nomer" ASC);';
+      dbq.SQL.Text := 'CREATE TABLE `keyvalue` ("key"  TEXT NOT NULL, "value"  TEXT, PRIMARY KEY ("key"));';
       dbq.ExecSQL;
       DB_setvalue('ignore', '');
       DB_setvalue('bindimei', 'false');
       DB_setvalue('urlactivesms', '');
+      DB_setvalue('urldatabasesms', '');
       DB_setvalue('servername', 'new server');
     end;
-    dbq.SQL.Text := 'CREATE TABLE IF NOT EXISTS "telegram" ("id" INTEGER PRIMARY KEY AUTOINCREMENT,"idtelegram" TEXT,"service" TEXT,UNIQUE ("idtelegram" ASC));';
-    dbq.ExecSQL;
-    dbq.SQL.Text := 'CREATE TABLE IF NOT EXISTS "filter_service" ("service" TEXT NOT NULL,"filter" TEXT,PRIMARY KEY ("service"));';
-    dbq.ExecSQL;
-    dbq.SQL.Text := 'CREATE TABLE IF NOT EXISTS "triggers" ("id" INTEGER NOT NULL, "input" TEXT NULL, "output" TEXT NULL, PRIMARY KEY ("id"));';
-    dbq.ExecSQL;
-    stage := 1;
-    dbq.SQL.Text := 'INSERT OR IGNORE INTO "keyvalue"("key", "value") VALUES (''telegrambot'', '''');';
-    dbq.ExecSQL;
+    urldatabasesms := DB_getvalue('urldatabasesms');
+    s := urldatabasesms;
+    if (urldatabasesms = '') then
+    begin
+      inc(stage);
+      dbq_used := @dbq;
+      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `telegram` ("id" INTEGER PRIMARY KEY AUTOINCREMENT,"idtelegram" TEXT,"service" TEXT,UNIQUE ("idtelegram" ASC));';
+      dbq_used^.ExecSQL;
+      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `filter_service` ("service" TEXT NOT NULL,"filter" TEXT,PRIMARY KEY ("service"));';
+      dbq_used^.ExecSQL;
+      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `triggers` ("id" INTEGER NOT NULL, "input" TEXT NULL, "output" TEXT NULL, PRIMARY KEY ("id"));';
+      dbq_used^.ExecSQL;
+      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `keyvalue` ("key"  TEXT NOT NULL, "value"  TEXT, PRIMARY KEY ("key"));';
+      dbq_used^.ExecSQL;
+      dbq_used^.SQL.Text :=
+        'CREATE TABLE IF NOT EXISTS `sms` ("id"  INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL DEFAULT 0, "nomer"  TEXT(16) NOT NULL, "datetime"  TEXT, "otkogo"  TEXT, "text"  TEXT);';
+      dbq_used^.ExecSQL;
+      dbq_used^.SQL.Text := 'CREATE INDEX IF NOT EXISTS "n" ON `sms` ("nomer" ASC);';
+      dbq_used^.ExecSQL;
+      dbq_used^.SQL.Text := 'INSERT OR IGNORE INTO `keyvalue`("key", "value") VALUES (''telegrambot'', '''');';
+      dbq_used^.ExecSQL;
+    end
+    else
+    begin
+      inc(stage);
+      dbc_sms.User :=Copy(s,1,Pos(':',s)-1);
+      Delete(s,1,Pos(':',s));
+      dbc_sms.Password :=Copy(s,1,Pos('@',s)-1);
+      Delete(s,1,Pos('@',s));
+      dbc_sms.HostName:=Copy(s,1,Pos(':',s)-1);
+      Delete(s,1,Pos(':',s));
+      dbc_sms.Port := StrToInt(s);
+      dbq_used := @dbq_sms;
+      inc(stage);
+      dbq_used^.SQL.Text := 'CREATE DATABASE IF NOT EXISTS `sms3d`;';
+      dbq_used^.ExecSQL;
+      inc(stage);
+      dbq_used^.SQL.Text := 'USE `sms3d`;';
+      dbq_used^.ExecSQL;
+      inc(stage);
+      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `telegram`  (`id` integer AUTO_INCREMENT,`idtelegram` text,`service` text ,PRIMARY KEY (`id`));';
+      dbq_used^.ExecSQL;
+      inc(stage);
+      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `filter_service` (`service` TEXT NOT NULL,`filter` TEXT,PRIMARY KEY (`service`(100)));';
+      dbq_used^.ExecSQL;
+      inc(stage);
+      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `triggers` (`id` INTEGER NOT NULL, `input` TEXT NULL, `output` TEXT NULL, PRIMARY KEY (`id`));';
+      dbq_used^.ExecSQL;
+      inc(stage);
+      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `keyvalue` (`key`  TEXT NOT NULL, `value`  TEXT, PRIMARY KEY (`key`(100)));';
+      dbq_used^.ExecSQL;
+      dbq_used^.SQL.Text :=
+      'CREATE TABLE IF NOT EXISTS `sms` (`id` int NOT NULL AUTO_INCREMENT,`nomer` varchar(16) NULL,`datetime` varchar(255) NULL,`otkogo` varchar(255) NULL,`text` varchar(255) NULL,PRIMARY KEY (`id`),INDEX `n`(`nomer`));';
+      dbq_used^.ExecSQL;
+    end;
+
     stage := 2;
     Result := True;
   except
@@ -664,14 +736,17 @@ procedure TMyStarter.DB_fix();
 begin
   _cs.Enter;
   try
-    dbq.Close;
-    dbq.SQL.Text := 'DELETE FROM sms WHERE otkogo="SYSTEM" AND text LIKE "Ваш номер %";';
-    dbq.ExecSQL;
-    dbq.SQL.Text := 'DELETE FROM sms WHERE id NOT IN (SELECT id FROM sms ORDER BY id DESC LIMIT 100000);';
-    dbq.ExecSQL;
-    dbq.SQL.Text := 'VACUUM;';
-    dbq.ExecSQL;
-    dbq.Close;
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE `otkogo`="SYSTEM" AND `text` LIKE "Ваш номер %";';
+    dbq_used^.ExecSQL;
+    if (urldatabasesms='') then
+    begin
+      dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE id NOT IN (SELECT id FROM `sms` ORDER BY id DESC LIMIT 500000);';
+      dbq_used^.ExecSQL;
+      dbq_used^.SQL.Text := 'VACUUM;';
+      dbq_used^.ExecSQL;
+    end;
+    dbq_used^.Close;
   finally
     _cs.Leave;
   end;
@@ -681,6 +756,8 @@ procedure TMyStarter.DB_close();
 begin
   dbq.Free;
   dbc.Free;
+  dbq_sms.Free;
+  dbc_sms.Free;
 end;
 
 procedure TMyStarter.SwapThread(a, b: integer);
@@ -790,7 +867,7 @@ begin
   _cs.Enter;
   try
     dbq.Close;
-    dbq.SQL.Text := 'SELECT * FROM "keyvalue" WHERE "key" = ''' + key + ''' LIMIT 1;';
+    dbq.SQL.Text := 'SELECT * FROM `keyvalue` WHERE `key` = ''' + key + ''' LIMIT 1;';
     dbq.Open;
     if dbq.RecordCount <> 0 then
       Result := dbq.FieldByName('value').AsString;
@@ -804,18 +881,18 @@ procedure TMyStarter.DB_telegramclient_load();
 begin
   _cs.Enter;
   try
-    dbq.Close;
-    dbq.SQL.Text := 'SELECT * FROM "telegram";';
-    dbq.Open;
-    while not dbq.EOF do
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'SELECT * FROM `telegram`;';
+    dbq_used^.Open;
+    while not dbq_used^.EOF do
     begin
       SetLength(arraytelegramclients, Length(arraytelegramclients) + 1);
-      arraytelegramclients[High(arraytelegramclients)].telegram := dbq.FieldByName('idtelegram').AsString;
-      arraytelegramclients[High(arraytelegramclients)].service := dbq.FieldByName('service').AsString;
-      dbq.Next;
+      arraytelegramclients[High(arraytelegramclients)].telegram := dbq_used^.FieldByName('idtelegram').AsString;
+      arraytelegramclients[High(arraytelegramclients)].service := dbq_used^.FieldByName('service').AsString;
+      dbq_used^.Next;
     end;
   finally
-    dbq.Close;
+    dbq_used^.Close;
     _cs.Leave;
   end;
 end;
@@ -838,15 +915,18 @@ begin
       Delete(st, 1, Pos('=', st));
       arraytelegramclients[i].service := st;
     end;
-    dbq.Close;
-    dbq.SQL.Text := 'DELETE FROM "telegram";';
-    dbq.ExecSQL;
+    dbq_used^.Close;
+    dbq_used^.SQL.Text := 'DELETE FROM `telegram`;';
+    dbq_used^.ExecSQL;
     for i := 0 to High(arraytelegramclients) do
     begin
-      dbq.SQL.Text := 'INSERT OR IGNORE INTO "telegram"("idtelegram", "service") VALUES (:idtelegram, :service);';
-      dbq.ParamByName('idtelegram').AsString := arraytelegramclients[i].telegram;
-      dbq.ParamByName('service').AsString := arraytelegramclients[i].service;
-      dbq.ExecSQL;
+      if urldatabasesms<>'' then
+        dbq_used^.SQL.Text := 'INSERT IGNORE INTO `telegram`(`idtelegram`, `service`) VALUES (:idtelegram, :service);'
+      else
+        dbq_used^.SQL.Text := 'INSERT OR IGNORE INTO `telegram`(`idtelegram`, `service`) VALUES (:idtelegram, :service);';
+      dbq_used^.ParamByName('idtelegram').AsString := arraytelegramclients[i].telegram;
+      dbq_used^.ParamByName('service').AsString := arraytelegramclients[i].service;
+      dbq_used^.ExecSQL;
     end;
     SetLength(arraytelegramclients, 0);
   finally
@@ -881,7 +961,7 @@ begin
   _cs.Enter;
   try
     dbq.Close;
-    dbq.SQL.Text := 'REPLACE INTO "keyvalue" ("key", "value") VALUES (:key, :value);';
+    dbq.SQL.Text := 'REPLACE INTO `keyvalue` (`key`, `value`) VALUES (:key, :value);';
     dbq.ParamByName('key').AsString := key;
     dbq.ParamByName('value').AsString := Value;
     dbq.ExecSQL;
@@ -1238,7 +1318,7 @@ begin
     begin
       timermili := 0;
       Inc(timersec);
-      if ((timersec mod 130) = 0) then  //Говорю серверу что онлайн, раз в 90 секунд
+      if ((timersec mod 180) = 0) then  //Говорю серверу что онлайн, раз в 90 секунд
       begin
         SendNomeraToServer();
         start_self();

@@ -180,6 +180,7 @@ begin
         starter.urlactivesms := DecodeURL(ReplaceString(d.Values['urlactivesms'], '+', '%20'));
         starter.servername := DecodeURL(ReplaceString(d.Values['servername'], '+', '%20'));
         starter.DB_setvalue('urlactivesms', starter.urlactivesms);
+        starter.DB_setvalue('urldatabasesms', DecodeURL(ReplaceString(d.Values['urldatabasesms'], '+', '%20')));
         starter.DB_setvalue('servername', starter.servername);
         Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>';
       end;
@@ -1119,10 +1120,11 @@ begin
               'portsnomera': l.Text := '<form action="/config/portsnomera" method="post"><textarea rows="15" cols="50" name="val">' +
                   getlistportsnomera() + '</textarea><input type="submit" value="Сохранить"></form>';
               'urlsms': l.Text :=
-                  '<form action="/config/urlsms" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Имя сервера:</p><textarea rows="5" cols="50" name="servername">' +
+                  '<form action="/config/urlsms" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Имя сервера:</p><textarea rows="2" cols="50" name="servername">' +
                   starter.servername +
-                  '</textarea><p style="margin-bottom: 0px;margin-top: 0px;">URL активации:</p><textarea rows="5" cols="50" name="urlactivesms">' +
-                  starter.urlactivesms + '</textarea><input type="submit" value="Сохранить"></form>';
+                  '</textarea><p style="margin-bottom: 0px;margin-top: 0px;">URL активации:</p><textarea rows="2" cols="50" name="urlactivesms">' +
+                  starter.urlactivesms + '</textarea><p style="margin-bottom: 0px;margin-top: 0px;">База данных (user:password@hostname:port):</p><textarea rows="2" cols="50" name="urldatabasesms">' +
+                  starter.DB_getvalue('urldatabasesms') + '</textarea><input type="submit" value="Сохранить"></form>';
               'delete_services':
               begin
               ts := '';
