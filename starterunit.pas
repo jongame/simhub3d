@@ -231,6 +231,16 @@ procedure TMyStarter.DB_deletesms(nomer, datetime, otkogo, Text: string);
 begin
   _cs.Enter;
   try
+    if (urldatabasesms<>'')  then
+    begin
+      dbq.Close;
+      dbq.SQL.Text := 'DELETE FROM `sms` WHERE (`nomer`=:nomer)AND(`datetime`=:datetime)AND(`otkogo`=:otkogo)AND(`text`=:text);';
+      dbq.ParamByName('nomer').AsString := nomer;
+      dbq.ParamByName('datetime').AsString := datetime;
+      dbq.ParamByName('otkogo').AsString := otkogo;
+      dbq.ParamByName('text').AsString := Text;
+      dbq.ExecSQL;
+    end;
     dbq_used^.Close;
     dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE (`nomer`=:nomer)AND(`datetime`=:datetime)AND(`otkogo`=:otkogo)AND(`text`=:text);';
     dbq_used^.ParamByName('nomer').AsString := nomer;
@@ -247,6 +257,13 @@ procedure TMyStarter.DB_deletesms(id: integer);
 begin
   _cs.Enter;
   try
+    if (urldatabasesms<>'')  then
+    begin
+      dbq.Close;
+      dbq.SQL.Text := 'DELETE FROM `sms` WHERE (`id`=:id);';
+      dbq.ParamByName('id').AsString := inttostr(id);
+      dbq.ExecSQL;
+    end;
     dbq_used^.Close;
     dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE (`id`=:id);';
     dbq_used^.ParamByName('id').AsString := inttostr(id);

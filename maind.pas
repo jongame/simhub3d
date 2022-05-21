@@ -15,7 +15,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 113;
+  version = 114;
 
 var
   timestart: string;
@@ -253,30 +253,6 @@ begin
       begin
         M.CopyFrom(HTTP.Document, 0);
         M.SaveToFile(extractfilepath(paramstr(0))+'script.js');
-      end;
-
-      if (version=113) then
-      begin
-        M.Clear;
-        HTTP.Clear;
-        res := HTTP.HTTPMethod('GET', 'https://raw.githubusercontent.com/jongame/simhub3d/main/complete/libmariadb.dll');
-        if (HTTP.ResultCode=302) then
-        begin
-          for i:=0 to HTTP.Headers.Count-1 do
-            if Pos('Location', HTTP.Headers.Strings[i])<>0 then
-            begin
-              s := HTTP.Headers.Strings[i];
-              Delete(s, 1, Pos('https', s)-1);
-              HTTP.Clear;
-              res := HTTP.HTTPMethod('GET', s);
-              break;
-            end;
-        end;
-        if (res) then
-        begin
-          M.CopyFrom(HTTP.Document, 0);
-          M.SaveToFile(extractfilepath(paramstr(0))+'libmariadb.dll');
-        end;
       end;
     finally
       M.Free;
