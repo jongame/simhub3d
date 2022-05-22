@@ -52,6 +52,7 @@ function UnixToDateTime(USec: Longint): TDateTime;
 function HashB(S: AnsiString; LenHash: Integer = 256): AnsiString;
 function PORTSTATE2Str(b:byte): string;
 function MODEMSTATE2Str(b:byte): string;
+function TimeDMYHMS():string;
 function TimeDMYHM():string;
 function TimeHM():string;
 function TimeHMS():string;
@@ -397,7 +398,7 @@ begin
     begin
       Append(f);
     end;
-    Writeln(f,TimeDMYHM()+':'+ s);
+    Writeln(f,TimeDMYHMS()+':'+ s);
   finally
     CloseFile(f);
   end;
@@ -500,19 +501,24 @@ begin
   result:=PosEx(a,b,c);
 end;
 
+function TimeDMYHMS():string;
+begin
+  result:=FormatDateTime('dd-mm-yy hh:nn:ss',Now());
+end;
+
 function TimeDMYHM():string;
 begin
-  result:=FormatDateTime('dd'+MDRL+'mm'+MDRL+'yy hh:nn',Now());
+  result:=FormatDateTime('dd-mm-yy hh:nn',Now());
 end;
 
 function TimeYMDHM():string;
 begin
-  result:=FormatDateTime('yy'+MDRL+'mm'+MDRL+'dd hh:nn:ss',Now());
+  result:=FormatDateTime('yy-mm-dd hh:nn:ss',Now());
 end;
 
 function TimeYMDHM(a:tdatetime):string;
 begin
-  result:=FormatDateTime('yy'+MDRL+'mm'+MDRL+'dd hh:nn:ss',a);
+  result:=FormatDateTime('yy-mm-dd hh:nn:ss',a);
 end;
 
 function TimeHM():string;

@@ -1116,7 +1116,7 @@ begin
   try
     if Length(smshistory)=0 then
       exit;
-    if (DateTimeToUnix(Now())-DateTimeToUnix(StrToDateTime(StringReplace(smshistory[0].datetime, '-', '-', [rfreplaceall]))))<300 then
+    if (DateTimeToUnix(Now())-DateTimeToUnix(StrToDateTime(StringReplace(smshistory[0].datetime, '-', MDRL, [rfreplaceall]))))<300 then
     begin
       TextSmsAdd('Новая сим, 5 мин');
       newsim := true;

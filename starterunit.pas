@@ -600,8 +600,10 @@ procedure TMyStarter.CheckSendSMS();
 var
   temp: smstosend;
   postdata: ansistring;
+  t: int64;
 begin
-  while True do
+  t := GetTickCount64();
+  while ((GetTickCount64()-t)<1000) do
   begin
     _cs.Enter;
     try
@@ -1296,12 +1298,9 @@ end;
 
 procedure TMyStarter.Execute;
 var
-  timermili, timersec: int64;
-  first: byte;
+  ttick, timersec: int64;
 begin
-  timermili := 0;
   timersec := 0;
-  first := 2;
   ShowInfo('Запускаю...');
   if (DB_open() = False) then
   begin
@@ -1325,37 +1324,32 @@ begin
     exit();
   end;
   TTCPHttpDaemon.Create;
+  ttick := GetTickCount64();
   while serverwork do
   begin
     drawbox := not drawbox;
     stagestarter := 100;
-    Sleep(250);
-    Inc(timermili);
-    if timermili = 4 then
+    while (GetTickCount64()-ttick)<1000 do
+      sleep(5);
+    inc(timersec);
+    ttick := GetTickCount64();
+    if ((timersec mod 180) = 0) then  //Говорю серверу что онлайн, раз в 90 секунд
     begin
-      timermili := 0;
-      Inc(timersec);
-      if ((timersec mod 180) = 0) then  //Говорю серверу что онлайн, раз в 90 секунд
-      begin
-        SendNomeraToServer();
-        start_self();
-      end;
-      if ((timersec mod 15) = 0)AND(first>0) then
-      begin
-        dec(first);
-        SendNomeraToServer();
-      end;
-      if ((timersec mod 10) = 0)AND(iinslcount<>0) then
-      begin
-        RunIIN();
-        inc(iinslcount);
-        if (iinslcount=3) then
-          iinslcount := 0;
-      end;
-
-      if ((timersec mod 1) = 0) then  //Отправляю смс-ки на севрер
-        CheckSendSMS();
+      SendNomeraToServer();
+      start_self();
     end;
+
+    if ((timersec = 15)OR((timersec mod 90) = 0)) then
+      SendNomeraToServer();
+
+    if ((timersec mod 10) = 0)AND(iinslcount<>0) then
+    begin
+      RunIIN();
+      inc(iinslcount);
+      if (iinslcount=3) then
+        iinslcount := 0;
+    end;
+    CheckSendSMS();//Отправляю смс-ки на севрер
   end;
   DB_close();
   stagestarter := 666;
