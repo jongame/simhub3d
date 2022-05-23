@@ -49,7 +49,7 @@ type
     drawbox: boolean;
     _stagestarter: integer;
     telegram_bot_id: string;
-    servername, urlactivesms, urldatabasesms: string;
+    servername, servercountry, urlactivesms, urldatabasesms: string;
     iinsl: TStringList;
     iinslcount: integer;
     property stagestarter: integer read _RSTAGESTARTER write _WSTAGESTARTER default 0;
@@ -115,6 +115,7 @@ begin
   telegram_bot_id := DB_getvalue('telegrambot');
   urlactivesms := DB_getvalue('urlactivesms');
   servername := DB_getvalue('servername');
+  servercountry := DB_getvalue('servercountry');
   for i := 0 to High(AM) do
     AM[i] := nil;
 
@@ -576,6 +577,7 @@ begin
   with TJSONObject.Create do
     try
       Strings['servername'] := servername;
+      Strings['servercountry'] := servercountry;
       Integers['port_count'] := Length(AM);
       for i := 0 to High(AM) do
       begin
@@ -686,6 +688,7 @@ begin
       DB_setvalue('urlactivesms', '');
       DB_setvalue('urldatabasesms', '');
       DB_setvalue('servername', 'new server');
+      DB_setvalue('servercountry', 'ru');
     end;
     urldatabasesms := DB_getvalue('urldatabasesms');
     s := urldatabasesms;
