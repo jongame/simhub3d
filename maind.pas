@@ -15,7 +15,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 115;
+  version = 116;
 
 var
   timestart: string;
@@ -59,11 +59,12 @@ end;
 
 procedure Init();
 begin
+  randomize;
   //TCriticalSection
   MainmemoCS := TCriticalSection.Create();
   //TStringList
   mainmemo := TStringList.Create;
-
+  //randomize;
   daempath := ExtractFileDir(ParamStr(0)) + _DIROS;
   debugmode := False;
 end;
@@ -77,6 +78,7 @@ end;
 procedure dMain();
 var
   Text, exp, res: string;
+  f : textfile;
 begin
   writeln('v', version);
   if FileExists(extractfilepath(paramstr(0))+'upd.bat') then

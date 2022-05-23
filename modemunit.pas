@@ -29,7 +29,12 @@ type
     procedure TextSmsAdd(s: string);
     procedure Str2Operator(s: string);
     procedure Str2Nomer(s: string);
+    function CheckLuna(num:string):boolean;
+    function GetLuna(num:string):string;
+    function GetRandomIMEI:string;
     function ParseCFUN(s: string): integer;
+    function ParseError(s:string):integer;
+    function ParseError2str(s:string):string;
     function _RPORT_STATE: TPORT_STATE;
     procedure _WPORT_STATE(const Value: TPORT_STATE);
     function _RMODEM_STATE: byte;
@@ -172,6 +177,63 @@ begin
   nomer := '+' + Copy(s, 1, Pos('"', s) - 1);
 end;
 
+function TMyModem.CheckLuna(num: string): boolean;
+var
+  p, sum, i:integer;
+begin
+  result:=false;
+  sum := 0;
+  for i := 1 to Length(Num)-1 do
+  begin
+     p := StrToInt(Num[Length(Num)-i]);
+     if (i mod 2) <> 0 then
+     begin
+       p :=p*2;
+       if p > 9 then p:=p - 9;
+     end;
+     sum :=sum+p;
+  end;
+  if ((sum mod 10) = 0) then sum:=0 else sum := 10 - (sum mod 10);
+
+  if Num[Length(Num)]=inttostr(sum) then
+    Result:=true;
+end;
+
+function TMyModem.GetLuna(num: string): string;
+var
+  p, sum, N, i:integer;
+begin
+  try
+  result:='0';
+  sum := 0;
+  for i := 1 to Length(Num) do
+  begin
+     p := StrToInt(Num[i]);
+     if (i mod 2) = 0 then
+     begin
+       p :=p*2;
+       if p > 9 then p:=p - 9;
+     end;
+     sum :=sum+p;
+  end;
+  if ((sum mod 10) = 0) then sum:=0 else sum := 10 - (sum mod 10);
+  Result:=inttostr(sum);
+  except
+    on E : Exception do
+      debuglog('GetLuna:' + E.ClassName + ':' + E.Message);
+  end;
+end;
+
+function TMyModem.GetRandomIMEI: string;
+var
+  i: integer;
+begin
+  result := '35806200';
+  for i:=0 to 5 do
+    result := result + Chr(48+random(10));
+  result := result + GetLuna(result);
+end;
+
 function TMyModem.ParseCFUN(s: string): integer;
 begin
   Result := 1;
@@ -181,6 +243,38 @@ begin
     Result := StrToInt(s);
   finally
 
+  end;
+end;
+
+function TMyModem.ParseError(s: string): integer;
+var
+  t:string;
+begin
+  result:=-1;
+  try
+    t := s;
+    if Pos('+CME ERROR: ',t)<>0 then
+      Delete(t,1,Pos('+CME ERROR: ',t)+11);
+    if Pos('+CMS ERROR: ',t)<>0 then
+      Delete(t,1,Pos('+CMS ERROR: ',t)+11);
+    result:=StrToInt(Copy(t,1,Pos(#10,t)-1));
+  except
+
+  end;
+end;
+
+function TMyModem.ParseError2str(s: string): string;
+var
+  n:integer;
+begin
+  result:='ukn';
+  n:=ParseError(s);
+  case n of
+    10 :exit('Симка не вставлена');
+    310:exit('Симка не вставлена');
+    311:exit('ПИН КОД НЕ ВЕДЕН');
+    313:exit('СИМКА ОШИБКА');
+    515:exit('ОШИБКА НУЖЕН РЕЗЕТ');
   end;
 end;
 
@@ -1119,7 +1213,7 @@ begin
     if (DateTimeToUnix(Now())-DateTimeToUnix(StrToDateTime(StringReplace(smshistory[0].datetime, '-', MDRL, [rfreplaceall]))))<300 then
     begin
       TextSmsAdd('Новая сим, 5 мин');
-      newsim := true;
+      //newsim := true;
     end;
   except
     on E: Exception do
@@ -1656,7 +1750,7 @@ begin
         end;
         MODEM_AR_ICC://Проверка CIID
         begin
-          if GetCheckLuna(GetNumber(sOK)) = False then
+          if CheckLuna(GetNumber(sOK)) = False then
           begin
             {TextSmsAdd('E(AR_ICC)LUNA:' + s);
             exit;  }
@@ -1954,8 +2048,13 @@ begin
           end;
           if ((Pos('+CME ERROR:', s) <> 0) or (Pos('+CMS ERROR:', s) <> 0)) then
           begin
-            TextSmsAdd(GetErrorSim(s));
-            if GetErrorSimRestart(s) then
+            TextSmsAdd(ParseError2str(s));
+            if (ParseError(s)=10)AND(ModemModel=M35) then //Смена IMEI
+            begin
+              TextSmsAdd('Смена IMEI.');
+              Send('AT+EGMR=1,7,"'+GetRandomIMEI()+'"');
+            end;
+            if ParseError(s)=515 then //515 ошибка, нужна перезагрузка
               RecvState(MODEM_AS_ATE0)
             else
             begin

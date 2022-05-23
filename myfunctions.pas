@@ -28,9 +28,6 @@ function CutCodeInSms(sms,rexp:string):string;
 function HTTPGetMainTable(c:integer):string;
 function ParseConfigData(var t:string):string;
 function GetNumber(const s: string): string;
-function GetCheckLuna( Num:string):boolean;
-function GetErrorSim(t:string):string;
-function GetErrorSimRestart(t:string):boolean;
 function GetStatePin(t:string):string;
 function CLIP2Nomer(const st: string):string;
 function Str2GotovLiModem(s:string):integer;
@@ -991,113 +988,6 @@ begin
   for i := 1 to length(s) do
     if s[i] in ['0'..'9'] then
       result := result + s[i];
-end;
-
-function GetCheckLuna( Num:string):boolean;
-var p, sum, N, i:integer;
-begin
-  result:=false;
-  sum := 0;
-  N := Length(Num);
-  for i := 1 to N-1 do
-  begin
-     p := StrToInt(Num[Length(Num)-i]);
-     if (i mod 2) <> 0 then
-     begin
-       p :=p*2;
-       if p > 9 then p:=p - 9;
-     end;
-     sum :=sum+p;
-  end;
-  if ((sum mod 10) = 0) then sum:=0 else sum := 10 - (sum mod 10);
-  {WriteConsole('LUNA:'+inttostr(Length(Num)));
-  WriteConsole('LUNA:'+Num);  }
-  if Num[Length(Num)]=inttostr(sum) then
-    Result:=true;
-end;
-
-function GetErrorSim(t:string):string;
-var
-n:integer;
-s:string;
-begin
-  n:=999;
-  try
-  s:=StringReplace(t,#10,'',[rfReplaceAll]);
-  n:=strtoint(Copy(s,Pos('+CME ERROR: ',s)+12,Length(s)-Pos('+CME ERROR: ',s)-11));
-  except
-
-  end;
-  case n of
-  10:
-  begin
-  result:='Симка не вставлена';
-  Exit;
-  end;
-  310:
-  begin
-  result:='Симка не вставлена';
-  Exit;
-  end;
-  311:
-  begin
-  result:='ПИН КОД НЕ ВЕДЕН';
-  Exit;
-  end;
-  313:
-  begin
-  result:='СИМКА ОШИБКА';
-  Exit;
-  end;
-  515:
-  begin
-  result:='ОШИБКА НУЖЕН РЕЗЕТ';
-  Exit;
-  end;
-  end;
-  result:=IntToStr(n);
-end;
-
-function GetErrorSimRestart(t:string):boolean;
-var
-n:integer;
-s:string;
-begin
-  n:=999;
-  try
-  s:=StringReplace(t,#10,'',[rfReplaceAll]);
-  n:=strtoint(Copy(s,Pos('+CME ERROR: ',s)+12,Length(s)-Pos('+CME ERROR: ',s)-11));
-  except
-
-  end;
-  case n of
-  10:
-  begin
-  result:=False;
-  Exit;
-  end;
-  310:
-  begin
-  result:=False;
-  Exit;
-  end;
-  311:
-  begin
-  result:=False;
-  Exit;
-  end;
-  313:
-  begin
-  result:=False;
-  Exit;
-  end;
-  515:
-  begin
-  result:=true;
-  Exit;
-  end;
-  end;
-  result:=False;
 end;
 
 end.
