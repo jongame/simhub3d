@@ -166,7 +166,11 @@ begin
       else
       begin
         if (Text <> '') then
+        begin
+          if (CutCodeInSms(Text, arrayoffilteractivation[j][i].cutsms)='') then
+            continue;
           exit(CutCodeInSms(Text, arrayoffilteractivation[j][i].cutsms));
+        end;
       end;
     end;
   until serv = '';
