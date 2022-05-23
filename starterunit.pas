@@ -37,7 +37,7 @@ type
     procedure ShowInfo(s: string; _modemid: integer = -1);
     function _RSTAGESTARTER: integer;
     procedure _WSTAGESTARTER(const Value: integer);
-    function SendSMSToServer(url, Data: string): string;
+    function SendSMSToServer(url, Data: string; logs: boolean = false): string;
     procedure SendNomeraToServer();
     procedure CheckSendSMS();
     function DB_open(): boolean;
@@ -538,11 +538,10 @@ begin
   end;
 end;
 
-function TMyStarter.SendSMSToServer(url, Data: string): string;
+function TMyStarter.SendSMSToServer(url, Data: string; logs: boolean): string;
 var
   HTTP: THTTPSend;
 begin
-
   Result := '';
   HTTP := THTTPSend.Create;
   HTTP.Sock.ConnectionTimeout := 2500;
@@ -559,7 +558,8 @@ begin
       on E : Exception do
         debuglog('SendSMSToServer:'+E.ClassName+' : '+E.Message);
     end;
-    debuglog('SendSMSToServer:'+IntToStr(HTTP.ResultCode)+' : '+url+' : '+Data);
+    if logs then
+      debuglog('SendSMSToServer:'+IntToStr(HTTP.ResultCode)+' : '+url+' : '+Data);
   finally
     HTTP.Free;
   end;
@@ -592,6 +592,7 @@ begin
     finally
       Free;
     end;
+  debuglog('send nomera');
   if SendSMSToServer(urlactivesms, s) <> 'ok' then
     debuglog('Ошибка отправки на сервер. Сервер не сказал ok.');
 end;
@@ -1301,6 +1302,7 @@ var
   ttick, timersec: int64;
 begin
   timersec := 0;
+  debuglog('start');
   ShowInfo('Запускаю...');
   if (DB_open() = False) then
   begin
@@ -1332,14 +1334,14 @@ begin
     while (GetTickCount64()-ttick)<1000 do
       sleep(5);
     inc(timersec);
-    ttick := GetTickCount64();
+    ttick := GetTickCount64() - (GetTickCount64() - ttick - 1000);
     if ((timersec mod 180) = 0) then  //Говорю серверу что онлайн, раз в 90 секунд
     begin
       SendNomeraToServer();
       start_self();
     end;
 
-    if ((timersec = 15)OR((timersec mod 90) = 0)) then
+    if (timersec = 15)OR(timersec = 30)OR((timersec mod 50) = 0) then
       SendNomeraToServer();
 
     if ((timersec mod 10) = 0)AND(iinslcount<>0) then

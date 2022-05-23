@@ -1213,7 +1213,7 @@ begin
     if (DateTimeToUnix(Now())-DateTimeToUnix(StrToDateTime(StringReplace(smshistory[0].datetime, '-', MDRL, [rfreplaceall]))))<300 then
     begin
       TextSmsAdd('Новая сим, 5 мин');
-      //newsim := true;
+      newsim := true;
     end;
   except
     on E: Exception do
