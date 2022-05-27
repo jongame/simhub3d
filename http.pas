@@ -207,6 +207,12 @@ begin
           AM[i].PORT_STATE := PORT_RESTART;
         Result := '{"cmd":"done"}';
       end;
+      '/port/allresetimei':
+      begin
+        for i := 0 to High(AM) do
+          AM[i].Send('AT+EGMR=1,7,"'+AM[i].GetRandomIMEI()+'"');
+        Result := '{"cmd":"done"}';
+      end;
       '/port/delete_service':
       begin
         starter.SMSDeleteService(DecodeURL(d.Values['id']), DecodeURL(ReplaceString(d.Values['service'], '+', '')));

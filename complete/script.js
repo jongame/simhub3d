@@ -437,6 +437,15 @@ $("#btn_all_reset").click(function() {
       datatype:"json"
 	});
 });
+$("#btn_reset_imei").click(function() {
+	$(this).prop( "disabled", true );
+	setTimeout(function() {$("#btn_reset_imei").prop( "disabled", false );}, 1500);
+	$.ajax({
+      type:"post",
+      url:"/port/allresetimei",
+      datatype:"json"
+	});
+});
 $("#btn_neopredelenzapros").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_neopredelenzapros").prop( "disabled", false );}, 1500);

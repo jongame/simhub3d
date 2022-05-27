@@ -31,7 +31,6 @@ type
     procedure Str2Nomer(s: string);
     function CheckLuna(num:string):boolean;
     function GetLuna(num:string):string;
-    function GetRandomIMEI:string;
     function ParseCFUN(s: string): integer;
     function ParseError(s:string):integer;
     function ParseError2str(s:string):string;
@@ -96,6 +95,7 @@ type
     property puls: boolean read _RPULS write _WPULS;
     property statesim: TSIM_OPERATOR_STATE read _Rstatesim write _Wstatesim;
     property modemstate: byte read _Rmodemstate write _Wmodemstate;
+    function GetRandomIMEI:string;
     procedure SetURL2Modem(Text: string);
     procedure ZaprosNomera();
     procedure SetNomer(s: string);
@@ -2038,6 +2038,18 @@ begin
         begin
           if Pos('+CMGL', s) <> 0 then
             _sendtimeout := 0;
+        end;
+        MODEM_AR_CMGF:
+        begin
+          if ((Pos('+CME ERROR:', s) <> 0) or (Pos('+CMS ERROR:', s) <> 0)) then
+          begin
+            if (ParseError(s)=3517)AND(ModemModel=M35) then //Смена IMEI
+            begin
+              TextSmsAdd('Смена IMEI.');
+              Send('AT+EGMR=1,7,"'+GetRandomIMEI()+'"');
+              RecvState(MODEM_ERROR);
+            end;
+          end;
         end;
         MODEM_AR_CPIN:
         begin//Проверка сим
