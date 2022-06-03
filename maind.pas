@@ -15,7 +15,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 121;
+  version = 122;
 
 var
   timestart: string;
@@ -64,7 +64,7 @@ begin
   MainmemoCS := TCriticalSection.Create();
   //TStringList
   mainmemo := TStringList.Create;
-  //randomize;
+  randomize;
   daempath := ExtractFileDir(ParamStr(0)) + _DIROS;
   debugmode := False;
 end;

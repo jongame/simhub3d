@@ -147,17 +147,8 @@ begin
       begin
         Headers.Clear;
         Headers.Add('Content-type: Text/Html; charset=utf-8');
-        if (d.IndexOfName('imei')<>-1) then
-        begin
-          starter.bindimei := true;
-          starter.DB_setvalue('bindimei', 'true');
-        end
-        else
-        begin
-          starter.bindimei := false;
-          starter.DB_setvalue('bindimei', 'false');
-        end;
-
+        starter.bindimei := d.IndexOfName('imei')<>-1;
+        starter.DB_setvalue('bindimei', ifthen(starter.bindimei ,'true','false'));
         if setlistports(DecodeURL(ReplaceString(d.Values['val'], '+', '%20'))) then
           Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>'
         else
@@ -183,6 +174,10 @@ begin
         starter.DB_setvalue('urldatabasesms', DecodeURL(ReplaceString(d.Values['urldatabasesms'], '+', '%20')));
         starter.DB_setvalue('servername', starter.servername);
         starter.DB_setvalue('servercountry', starter.servercountry);
+        starter.bindimei_sim := d.IndexOfName('bindimei_sim')<>-1;
+        starter.DB_setvalue('bindimei_sim', ifthen(starter.bindimei_sim, 'true', 'false'));
+        starter.newsim_delay := d.IndexOfName('newsim_delay')<>-1;
+        starter.DB_setvalue('newsim_delay', ifthen(starter.newsim_delay, 'true', 'false'));
         Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>';
       end;
       '/config/delete_services':
@@ -461,6 +456,12 @@ begin
       '/starter/setbasa':
       begin
         Result := Data;
+      end;
+      '/starter/urlactivesms_set':
+      begin
+        starter.urlactivesms_active := not starter.urlactivesms_active;
+        starter.DB_setvalue('urlactivesms_active', ifthen(starter.urlactivesms_active,'true','false'));
+        Result := '{"cmd":"done"}';
       end;
     end;
   finally
@@ -1034,6 +1035,8 @@ begin
           l.LoadFromFile(extractfilepath(ParamStr(0)) + 'index.html');
           l.Text := StringReplace(l.Text, '_PROGRAM_NAME_', PROGRAM_NAME, [rfReplaceAll]);
           l.Text := StringReplace(l.Text, '_MAIN_TABLE_TAG_', HTTPGetMainTable(SimPort + 1), [rfReplaceAll]);
+          l.Text := StringReplace(l.Text, 'SITE_STATE_TEXT', ifthen(starter.urlactivesms_active, 'ВКЛЮЧЕН', 'ВЫКЛЮЧЕН'), [rfReplaceAll]);
+          l.Text := StringReplace(l.Text, 'SITE_STATE_BTN', ifthen(starter.urlactivesms_active, 'btn-success', 'btn-danger'), [rfReplaceAll]);
           l.SaveToStream(OutputData);
         finally
           l.Free;
@@ -1131,6 +1134,8 @@ begin
                           '<p style="margin-bottom: 0px;margin-top: 0px;">Страна сим карт(ru\uk\kz)</p><input type="text" size="60" name="servercountry" value="' + starter.servercountry + '">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">URL активации:</p><input type="text" size="60" name="urlactivesms" value="' + starter.urlactivesms + '">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">База данных (user:password@hostname:port):</p><input type="text" size="60" name="urldatabasesms" value="' + starter.DB_getvalue('urldatabasesms') + '"><br>'+
+                          '<input type="checkbox" '+ifthen(starter.bindimei_sim, 'checked ', '')+'name="bindimei_sim" value="1">Привязка IMEI к SIM(M35 only)<br>'+
+                          '<input type="checkbox" '+ifthen(starter.newsim_delay, 'checked ', '')+'name="newsim_delay" value="1">15 мин ожидание, новой сим<br>'+
                           '<input type="submit" value="Сохранить"></form></body></html>';
               'delete_services':
               begin

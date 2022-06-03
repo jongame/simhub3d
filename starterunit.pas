@@ -45,7 +45,7 @@ type
     procedure DB_close();
     procedure RunIIN();
   public
-    bindimei: boolean;
+    bindimei, bindimei_sim, urlactivesms_active, newsim_delay: boolean;
     drawbox: boolean;
     _stagestarter: integer;
     telegram_bot_id: string;
@@ -105,7 +105,7 @@ begin
   if SerialPorts.Count = 0 then
   begin
     ShowInfo('Serial Port не найдены.');
-    exit;
+    //exit;
   end;
 
   serverwork := True;
@@ -575,7 +575,7 @@ var
   s,t: string;
   i: integer;
 begin
-  if (urlactivesms = '') then
+  if (urlactivesms = '')OR(urlactivesms_active=false) then
     exit;
   s := '';
   with TJSONObject.Create do
@@ -689,6 +689,8 @@ begin
       dbq.ExecSQL;
       DB_setvalue('ignore', '');
       DB_setvalue('bindimei', 'false');
+      DB_setvalue('bindimei_sim', 'false');
+      DB_setvalue('urlactivesms_active', 'true');
       DB_setvalue('urlactivesms', '');
       DB_setvalue('urldatabasesms', '');
       DB_setvalue('servername', 'new server');
@@ -749,6 +751,17 @@ begin
       'CREATE TABLE IF NOT EXISTS `sms` (`id` int NOT NULL AUTO_INCREMENT,`nomer` varchar(16) NULL,`datetime` varchar(255) NULL,`otkogo` varchar(255) NULL,`text` varchar(255) NULL,PRIMARY KEY (`id`),INDEX `n`(`nomer`));';
       dbq_used^.ExecSQL;
     end;
+    if DB_getvalue('bindimei')='' then
+      DB_setvalue('bindimei', 'false');
+
+    if DB_getvalue('bindimei_sim')='' then
+      DB_setvalue('bindimei_sim', 'false');
+
+    if DB_getvalue('urlactivesms_active')='' then
+      DB_setvalue('urlactivesms_active', 'true');
+
+    if DB_getvalue('newsim_delay')='' then
+      DB_setvalue('newsim_delay', 'false');
 
     stage := 2;
     Result := True;
@@ -1295,8 +1308,9 @@ begin
   telegram_bot_id := '';
   drawbox := False;
   serverwork := False;
-  bindimei := true;
-  Randomize;
+  bindimei := false;
+  bindimei_sim := false;
+  urlactivesms_active := true;
 end;
 
 destructor TMyStarter.Destroy;
@@ -1316,8 +1330,12 @@ begin
     ShowInfo('Ошибка файла data.db');
     exit; //Ошибка бд.
   end;
-  if DB_getvalue('bindimei')='false' then
-    bindimei := false else bindimei := true;
+
+  bindimei := DB_getvalue('bindimei')='true';
+  bindimei_sim := DB_getvalue('bindimei_sim')='true';
+  urlactivesms_active := DB_getvalue('urlactivesms_active')='true';
+  newsim_delay := DB_getvalue('newsim_delay')='true';
+
   DB_fix();
   StartALL();
   DB_servicefilter_load();
@@ -1342,7 +1360,7 @@ begin
       sleep(5);
     inc(timersec);
     ttick := GetTickCount64() - (GetTickCount64() - ttick - 1000);
-    if ((timersec mod 180) = 0) then  //Говорю серверу что онлайн, раз в 90 секунд
+    if ((timersec mod 180) = 0) then  //Говорю серверу что онлайн и перезапуск раз в 180 секунд
     begin
       SendNomeraToServer();
       start_self();

@@ -29,24 +29,14 @@
 		<nav class="navbar navbar-inverse">
 			<div class="container">
 				<div class="navbar-header">
-					<button type="button" class="collapsed navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-9" aria-expanded="false">
-					<span class="sr-only">Toggle navigation</span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-					<span class="icon-bar"></span>
-					</button>
-					<a href="#" class="navbar-brand">SIMHUB</a>
+					<button class="btn SITE_STATE_BTN navbar-right navbar-btn" id="btn_urlactivesms_set">SITE_STATE_TEXT</button>
 				</div>
 				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-9">
 					<button class="btn btn-danger navbar-right navbar-btn" id="btn_systemexit">Закрыть</button>
-					<button class="btn btn-warning navbar-right navbar-btn" id="btn_all_reset">Перезагрузить все</button>
-					<button class="btn btn-warning navbar-right navbar-btn" id="btn_reset_imei">Сбросить IMEI</button>
 					<!--<button class="btn btn-danger navbar-right navbar-btn" id="btn_systemreboot">Перезагруза</button>-->
 					<!--<button class="btn btn-warning navbar-right navbar-btn" id="btn_system">Служебные функции</button>-->
-					<button class="btn btn-warning navbar-right navbar-btn" id="btn_allzapros">Общий запрос номера</button>
-					<button class="btn btn-warning navbar-right navbar-btn" id="btn_neopredelenzapros">Запрос неопределенных</button>
 					<button class="btn btn-info navbar-right navbar-btn" id="btn_systemrestart" >Перезапуск</button>
-					<button class="btn btn-info navbar-right navbar-btn" id="btn_systemreboot" >Reboot OS</button>
+					<!--<button class="btn btn-info navbar-right navbar-btn" id="btn_systemreboot" >Reboot OS</button>-->
 					<button class="btn btn-info navbar-right navbar-btn" id="btn_memoclear" >Очистить доску</button>
 				</div>
 			</div>
@@ -129,7 +119,15 @@
 					<div class="col-md-12">
 						<div class="col-md-6 no-margin"><button id="btn_zapros_nomera" type="button" class="btn btn-info btn-sm btn-block">Запрос номера</button></div>
 						<div class="col-md-6 no-margin"><button id="btn_reset" type="button" class="btn btn-danger btn-sm btn-block">ПЕРЕЗАГРУЗИТЬ</button></div>
+					</div>
+					<div class="col-md-12">
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-sm btn-block" id="btn_allzapros">Общий запрос номера</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-danger btn-sm btn-block" id="btn_all_reset">Перезагрузить все</button></div>
 					</div>					
+					<div class="col-md-12">
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-sm btn-block" id="btn_neopredelenzapros">Запрос неопределенных</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-danger btn-sm btn-block" id="btn_reset_imei">Сбросить IMEI</button></div>
+					</div>
 					<div class="col-md-12">
 						<div class="col-md-6 no-margin"><button id="btn_send_sms" type="button" class="btn btn-info btn-sm btn-block">Отправка смс</button></div>
 						<div class="col-md-6 no-margin"><button id="btn_allsend_sms" type="button" class="btn btn-info btn-sm btn-block">Отправка смс всеми</button></div>

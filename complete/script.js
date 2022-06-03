@@ -115,7 +115,7 @@ $(document).keyup(function(e) {
 
 $(document).ready(function() {
 	refreshfunc();
-	refreshtimer = setInterval(refreshfunc, 2500); 
+	refreshtimer = setInterval(refreshfunc, 1000); 
 	
 $("#input_at_cmd").on('input', function() {
   refreshfunc();
@@ -410,6 +410,20 @@ $("#btn_systemrestart").click(function() {
 	});
 });
 
+$("#btn_urlactivesms_set").click(function() {
+	$(this).prop( "disabled", true );
+	setTimeout(function() {$("#btn_urlactivesms_set").prop( "disabled", false );}, 1500);
+	$.ajax({
+      type:"post",
+      url:"/starter/urlactivesms_set",
+      datatype:"json",
+      success:function(msg)
+        {
+			location.reload();
+        }
+	});
+});
+
 $("#btn_systemexit").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_systemexit").prop( "disabled", false );}, 1500);
@@ -419,6 +433,7 @@ $("#btn_systemexit").click(function() {
       datatype:"json"
 	});
 });
+
 $("#btn_allzapros").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_allzapros").prop( "disabled", false );}, 1500);

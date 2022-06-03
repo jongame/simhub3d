@@ -5,7 +5,7 @@ unit modemunit;
 interface
 
 uses
-  Classes, SysUtils, Synaser, lazutf8, Graphics, portcons, myfunctions, syncobjs, RegExpr, LCLIntf, ssl_openssl, strutils;
+  Classes, SysUtils, Synaser, lazutf8, Graphics, portcons, myfunctions, syncobjs, RegExpr, LCLIntf, ssl_openssl, strutils, sha1;
 
 type
 
@@ -80,7 +80,7 @@ type
     _puls: boolean;
     smshistory: TArrayofMySmsinFile;
     _checkall: integer;
-    __ticktack: integer;
+    __ticktack, sec_from_start: Qword;
      _modemstate: byte;
     _statesim: TSIM_OPERATOR_STATE;
     property ticktack: longword read _Rticktack write _Wticktack;
@@ -95,7 +95,7 @@ type
     property puls: boolean read _RPULS write _WPULS;
     property statesim: TSIM_OPERATOR_STATE read _Rstatesim write _Wstatesim;
     property modemstate: byte read _Rmodemstate write _Wmodemstate;
-    function GetRandomIMEI:string;
+    function GetRandomIMEI(const s: string = ''):string;
     procedure SetURL2Modem(Text: string);
     procedure ZaprosNomera();
     procedure SetNomer(s: string);
@@ -224,13 +224,23 @@ begin
   end;
 end;
 
-function TMyModem.GetRandomIMEI: string;
+function TMyModem.GetRandomIMEI(const s: string): string;
 var
   i: integer;
+  sha1d: TSHA1Digest;
 begin
   result := '35806200';
-  for i:=0 to 5 do
-    result := result + Chr(48+random(10));
+  if s='' then
+  begin
+    for i:=0 to 5 do
+      result := result + Chr(48+random(10));
+  end
+  else
+  begin
+    sha1d := SHA1String(s);
+    for i:=0 to 5 do
+      result := result + IntToStr(sha1d[i] mod 10);
+  end;
   result := result + GetLuna(result);
 end;
 
@@ -584,7 +594,8 @@ begin
   _cs := TCriticalSection.Create();
   ticktack := GetTickCount64();
   idthread := i;
-  __ticktack := 0;
+  __ticktack := GetTickCount64();
+  sec_from_start := 0;
   PORT_STATE := PORT_CREATE;
   MODEM_STATE := MODEM_NULL;
   ModemModel := MODEL_UNKOWN;
@@ -741,6 +752,10 @@ begin
   if nomer = Nomer_Neopredelen then
     exit;
   starter.DB_loadsms(idthread);
+  if (Length(smshistory)=0)AND(starter.servercountry='kz') then
+  begin
+    SMSHistoryAdd('new sim');
+  end;
 end;
 
 procedure TMyModem.Send(s: string);
@@ -1208,11 +1223,11 @@ begin
   SMSHistoryLoadorClear();
   Checkall := 1;
   try
-    if Length(smshistory)=0 then
+    if (starter.newsim_delay=false)OR(Length(smshistory)=0) then
       exit;
-    if (DateTimeToUnix(Now())-DateTimeToUnix(StrToDateTime(StringReplace(smshistory[0].datetime, '-', MDRL, [rfreplaceall]))))<300 then
+    if (DateTimeToUnix(Now())-DateTimeToUnix(StrToDateTime(StringReplace(smshistory[0].datetime, '-', MDRL, [rfreplaceall]))))<900 then
     begin
-      TextSmsAdd('Новая сим, 5 мин');
+      TextSmsAdd('Новая сим, 15 мин.');
       newsim := true;
     end;
   except
@@ -1542,12 +1557,23 @@ begin
           exit;
           //sleep(10);
         end; }
-      Inc(__ticktack);
-      if (__ticktack > 100) and (Length(deletemsg) = 0) then
+      if ((GetTickCount64() - __ticktack) > 1000) then
       begin
-        MODEM_STATE := MODEM_NEED_RESTART_AT_CPMS;
-        __ticktack := 0;
+        __ticktack := __ticktack + 1000;
+        inc(sec_from_start);
+        if ((sec_from_start mod 61) = 0) then
+        begin
+          PORT_STATE := PORT_RESTART;
+          __ticktack := GetTickCount64();
+        end;
+        if ((sec_from_start mod 15) = 0) then
+        begin
+          MODEM_STATE := MODEM_NEED_RESTART_AT_CPMS;
+          __ticktack := GetTickCount64();
+        end;
       end;
+
+
     end;
     MODEM_AS_DELETEMSG:
     begin
@@ -1756,6 +1782,15 @@ begin
             exit;  }
           end;
           tmps := GetNumber(sOK);
+          if (starter.bindimei=false)AND(starter.bindimei_sim)AND(ModemModel=M35)AND(IMEI<>GetRandomIMEI(tmps)) then
+          begin
+            Send('AT+EGMR=1,7,"'+GetRandomIMEI(tmps)+'"');
+            sleep(500);
+            Send('AT+CFUN=1,1');
+            sleep(5000);
+            PORT_STATE := PORT_RESTART;
+          end;
+
           if (tmps <> ICC) then
           begin
             TextSmsAdd('Похоже вставлена новая сим карта, сбросываю номер.');
@@ -1803,7 +1838,7 @@ begin
         end;
         MODEM_AR_CPBR://Что за номер из адресной книги
         begin
-          //+CPBR: 1,"77473985176",129,"myphone"
+          //+CPBR: 1,"71234567890",129,"myphone"
           Str2Nomer(sOK);
           RecvState();
           exit;
@@ -2045,9 +2080,10 @@ begin
           begin
             if (ParseError(s)=3517)AND(ModemModel=M35) then //Смена IMEI
             begin
-              TextSmsAdd('Смена IMEI.');
-              Send('AT+EGMR=1,7,"'+GetRandomIMEI()+'"');
-              RecvState(MODEM_ERROR);
+              {TextSmsAdd('Смена IMEI.0');
+              Send('AT+EGMR=1,7,"'+GetRandomIMEI()+'"');   }
+              sleep(2500);
+              PORT_STATE := PORT_RESTART;
             end;
           end;
         end;
@@ -2063,8 +2099,10 @@ begin
             TextSmsAdd(ParseError2str(s));
             if (ParseError(s)=10)AND(ModemModel=M35) then //Смена IMEI
             begin
-              TextSmsAdd('Смена IMEI.');
+              TextSmsAdd('Смена IMEI.1');
               Send('AT+EGMR=1,7,"'+GetRandomIMEI()+'"');
+              sleep(5000);
+              PORT_STATE := PORT_RESTART;
             end;
             if ParseError(s)=515 then //515 ошибка, нужна перезагрузка
               RecvState(MODEM_AS_ATE0)
