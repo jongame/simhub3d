@@ -28,6 +28,7 @@ type
     function GetSendMemo(i: integer): string;
     function GetRecvMemo(i: integer): string;
     function GetSmsMemo(i: integer): string;
+    function GetSimBankSlot(i: integer): string;
     function Jsonmainmemo(const a, b, c, d, e, f: integer; const g: string):string;
     function Jsongetport(const a: integer): string;
     function ExecutePostData(const url, Data: string): string;
@@ -38,6 +39,7 @@ type
     function getlistports(): string;
     function getlistportsimei(): string;
     function getlistportsnomera(): string;
+    function getlisticc():string;
     function setlistports(const s: string): boolean;
     function setlistportsnomera(const s: string): boolean;
     function Filter_memo(const s,c: string): string;
@@ -72,7 +74,7 @@ begin
   p := PChar(s);
   while ((CPLen <> 0) and (unicode <> 0)) do
   begin
-    unicode := UTF8CharacterToUnicode(p, CPLen);
+    unicode := UTF8CodepointToUnicode(p, CPLen);
     if ((($30 <= unicode) and (unicode <= $39)) or (($410 <= unicode) and (unicode <= $44F)) or (($61 <= unicode) and (unicode <= $7A)) or
       (($41 <= unicode) and (unicode <= $5A))) then
       Result := ((Result shl 5) - Result) + unicode;
@@ -174,10 +176,13 @@ begin
         starter.DB_setvalue('urldatabasesms', DecodeURL(ReplaceString(d.Values['urldatabasesms'], '+', '%20')));
         starter.DB_setvalue('servername', starter.servername);
         starter.DB_setvalue('servercountry', starter.servercountry);
+        starter.DB_setvalue('simbank_com', DecodeURL(ReplaceString(d.Values['simbank_com'], '+', '%20')));
         starter.bindimei_sim := d.IndexOfName('bindimei_sim')<>-1;
         starter.DB_setvalue('bindimei_sim', ifthen(starter.bindimei_sim, 'true', 'false'));
         starter.newsim_delay := d.IndexOfName('newsim_delay')<>-1;
         starter.DB_setvalue('newsim_delay', ifthen(starter.newsim_delay, 'true', 'false'));
+        starter.simbank_swapig := d.IndexOfName('simbank_swapig')<>-1;
+        starter.DB_setvalue('simbank_swapig', ifthen(starter.simbank_swapig, 'true', 'false'));
         Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>';
       end;
       '/config/delete_services':
@@ -229,6 +234,96 @@ begin
             t := '';
           end;
         end;
+        Result := '{"cmd":"done"}';
+      end;
+      '/port/sim_bank_down':
+      begin
+        t := DecodeURL(d.Values['id']);
+        while (t<>'') do
+        begin
+          if (Pos(',',t)<>0) then
+          begin
+            MySimBank._cs.Enter;
+            try
+            for i:=0 to High(MySimBank.numbers_ports) do
+              if MySimBank.numbers_ports[i].idport=StrToInt(Copy(t,1,Pos(',',t)-1)) then
+                if (MySimBank.numbers_ports[i].sel>1) then
+                begin
+                  MySimBank.numbers_ports[i].sel := MySimBank.numbers_ports[i].sel - 1;
+                  MySimBank.numbers_ports[i].need_exe := 2;
+                end;
+            finally
+              MySimBank._cs.Leave;
+            end;
+            Delete(t,1,Pos(',',t));
+          end
+          else
+          begin
+            MySimBank._cs.Enter;
+            try
+            for i:=0 to High(MySimBank.numbers_ports) do
+              if MySimBank.numbers_ports[i].idport=StrToInt(t) then
+                if (MySimBank.numbers_ports[i].sel>1) then
+                begin
+                  MySimBank.numbers_ports[i].sel := MySimBank.numbers_ports[i].sel - 1;
+                  MySimBank.numbers_ports[i].need_exe := 2;
+                end;
+            finally
+              MySimBank._cs.Leave;
+            end;
+            t := '';
+          end;
+        end;
+        Result := '{"cmd":"done"}';
+      end;
+      '/port/sim_bank_up':
+      begin
+        t := DecodeURL(d.Values['id']);
+        while (t<>'') do
+        begin
+          if (Pos(',',t)<>0) then
+          begin
+            MySimBank._cs.Enter;
+            try
+            for i:=0 to High(MySimBank.numbers_ports) do
+              if MySimBank.numbers_ports[i].idport=StrToInt(Copy(t,1,Pos(',',t)-1)) then
+                if (MySimBank.numbers_ports[i].sel<16) then
+                begin
+                  MySimBank.numbers_ports[i].sel := MySimBank.numbers_ports[i].sel + 1;
+                  MySimBank.numbers_ports[i].need_exe := 2;
+                end;
+            finally
+              MySimBank._cs.Leave;
+            end;
+            Delete(t,1,Pos(',',t));
+          end
+          else
+          begin
+            MySimBank._cs.Enter;
+            try
+            for i:=0 to High(MySimBank.numbers_ports) do
+              if MySimBank.numbers_ports[i].idport=StrToInt(t) then
+                if (MySimBank.numbers_ports[i].sel<16) then
+                begin
+                  MySimBank.numbers_ports[i].sel := MySimBank.numbers_ports[i].sel + 1;
+                  MySimBank.numbers_ports[i].need_exe := 2;
+                end;
+            finally
+              MySimBank._cs.Leave;
+            end;
+            t := '';
+          end;
+        end;
+        Result := '{"cmd":"done"}';
+      end;
+      '/port/sim_bank_prev':
+      begin
+        MySimBank.prev_slot();
+        Result := '{"cmd":"done"}';
+      end;
+      '/port/sim_bank_next':
+      begin
+        MySimBank.next_slot();
         Result := '{"cmd":"done"}';
       end;
       '/port/zaprosnomera':
@@ -661,6 +756,24 @@ begin
   end;
 end;
 
+function TTCPHttpThrd.getlisticc: string;
+var
+  i: integer;
+  t: TStringList;
+begin
+  Result := '';
+  t := TStringList.Create;
+  try
+    for i := 0 to High(AM) do
+    begin
+      t.Add(IntToStr(i+1)+'='+AM[i].icc);
+    end;
+    Result := t.Text;
+  finally
+    t.Free;
+  end;
+end;
+
 function TTCPHttpThrd.setlistports(const s: string): boolean;
 var
   i, j: integer;
@@ -781,11 +894,20 @@ end;
 
 function TTCPHttpThrd.GetMainTable(s: string): string;
 var
-  i, j: integer;
+  i, j,k: integer;
   b: boolean;
+  numbers_ports: array of TSIMBANK_Sim;
 begin
   if (s='') then
     s := 'aa';
+
+  MySimBank._cs.Enter;
+  try
+    numbers_ports := MySimBank.numbers_ports;
+  finally
+    MySimBank._cs.Leave;
+  end;
+
   Result := '{';
   for j := 0 to High(AM) do
   begin
@@ -800,9 +922,20 @@ begin
         break;
       end;
     if (b) then
-      Result += '"0"],'
+      Result += '"0",'
     else
-      Result += '"1"],';
+      Result += '"1",';
+    if Length(numbers_ports)=0 then
+       Result += '""],'
+    else
+    for k:=0 to High(numbers_ports) do
+      if numbers_ports[k].idport=j then
+      begin
+        Result += '"'+IntToStr(numbers_ports[k].sel)+'"],';
+        break
+      end
+      else if (k=High(numbers_ports)) then
+        Result += '""],';
   end;
   Result[Length(Result)] := '}';//заменяем запятую
 end;
@@ -840,9 +973,23 @@ begin
     exit;
   AM[i]._cs.Enter;
   try
-    Result := AM[i]._SmsText.Text + #13#10 + AM[i].RecvText;
+    Result := AM[i]._SmsText.Text + #13#10 + AM[i].RecvText+#13#10;//+'['+AM[i].last_response+']';
   finally
     AM[i]._cs.Leave;
+  end;
+end;
+
+function TTCPHttpThrd.GetSimBankSlot(i: integer): string;
+var
+  j: integer;
+begin
+  Result := '0';
+  if (i = -1) then
+    exit;
+  for j:=0 to High(MySimBank.numbers_ports) do
+  begin
+    if MySimBank.numbers_ports[j].idport = i then
+      result := IntToStr(MySimBank.numbers_ports[j].sel);
   end;
 end;
 
@@ -873,6 +1020,12 @@ begin
     J.Add('smsmemo', GetSmsMemo(f))
   else
     J.Add('smsmemo', 0);
+
+  if (d <> httphash(GetSmsMemo(f))) then
+    J.Add('sim_bank_slot', GetSimBankSlot(f))
+  else
+    J.Add('sim_bank_slot', 0);
+
 
   if (e <> httphash(GetMainTable(g))) then
     J.Add('maintable', GetMainTable(g))
@@ -1054,6 +1207,18 @@ begin
           l.Free;
         end;
       end;
+      if URI = '/getdebug' then
+      begin
+        headers.Clear;
+        headers.Add('Content-type: Text/Html; charset=utf-8');
+        l := TStringList.Create;
+        try
+          //l.Text := IntToStr(byte(MySimBank.SIMBANK_STATE)) + ' ' + IntToStr(byte(MySimBank.stage));
+          l.SaveToStream(OutputData);
+        finally
+          l.Free;
+        end;
+      end;
       case Str2httpcommand(URI).ValueFromIndex[0] of
         'debug':
         begin
@@ -1129,13 +1294,17 @@ begin
                   getlistportsimei() + '</textarea></form>';
               'portsnomera': l.Text := '<form action="/config/portsnomera" method="post"><textarea rows="15" cols="50" name="val">' +
                   getlistportsnomera() + '</textarea><input type="submit" value="Сохранить"></form>';
+              'portsicc': l.Text := '<form action="/config/" method="post"><textarea rows="15" cols="50" name="val">' +
+                  getlisticc() + '</textarea><input type="submit" value="Сохранить"></form>';
               'urlsms': l.Text := '<html><head><meta http-equiv="content-type" content="text/html; charset=UTF-8"></head><body><form action="/config/urlsms" method="post">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">Имя сервера:</p><input type="text" size="60" name="servername" value="' + starter.servername + '">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">Страна сим карт(ru\uk\kz)</p><input type="text" size="60" name="servercountry" value="' + starter.servercountry + '">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">URL активации:</p><input type="text" size="60" name="urlactivesms" value="' + starter.urlactivesms + '">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">База данных (user:password@hostname:port):</p><input type="text" size="60" name="urldatabasesms" value="' + starter.DB_getvalue('urldatabasesms') + '"><br>'+
-                          '<input type="checkbox" '+ifthen(starter.bindimei_sim, 'checked ', '')+'name="bindimei_sim" value="1">Привязка IMEI к SIM(M35 only)<br>'+
-                          '<input type="checkbox" '+ifthen(starter.newsim_delay, 'checked ', '')+'name="newsim_delay" value="1">15 мин ожидание, новой сим<br>'+
+                          '<p style="margin-bottom: 0px;margin-top: 0px;">SIM Bank(ПОРТ=№ модема:Слот по умолчанию,..):</p><input type="text" size="60" name="simbank_com" value="' + starter.DB_getvalue('simbank_com') + '"><br>'+
+                          '<input type="checkbox" '+ifthen(starter.simbank_swapig, 'checked ', '')+' name="simbank_swapig" value="1">Переключать слот при IG<br>'+
+                          '<input type="checkbox" '+ifthen(starter.bindimei_sim, 'checked ', '')+' name="bindimei_sim" value="1">Привязка IMEI к SIM(M35 only)<br>'+
+                          '<input type="checkbox" '+ifthen(starter.newsim_delay, 'checked ', '')+' name="newsim_delay" value="1">15 мин ожидание, новой сим<br>'+
                           '<input type="submit" value="Сохранить"></form></body></html>';
               'delete_services':
               begin

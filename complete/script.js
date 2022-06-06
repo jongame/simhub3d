@@ -38,7 +38,8 @@ function refreshfunc() {
 	    "mainmemo":hash($("#mainmemo").val()),
 	    "sendmemo":hash($("#sendmemo").val()),
 	    "recvmemo":hash($("#recvmemo").val()),
-	    "smsmemo":hash($("#smsmemo").val())
+	    "smsmemo":hash($("#smsmemo").val()),
+	    "sim_bank_slot":hash($("#sim_bank_slot").val())
 	  },
       datatype:"json",
       success:function(msg)
@@ -55,6 +56,11 @@ function refreshfunc() {
 		  }
 		  if (msg["smsmemo"]!=0) {
 			$("#smsmemo").val(msg["smsmemo"]);
+		  }		  
+		  if (msg["sim_bank_slot"]!=0) {
+			$("#sim_bank_slot").text(msg["sim_bank_slot"]);
+		  } else {
+			$("#sim_bank_slot").text("");
 		  }
           if (msg["maintable"]!=0) {
 			  var jsonData = JSON.parse(msg["maintable"]);
@@ -84,6 +90,8 @@ function refreshfunc() {
 							$("tr#"+counter).find('.state').removeClass().addClass('state').addClass('alert-danger').html(jsonData[counter][1]);
 							break;
 					}
+					$("tr#"+counter).find('.sb_slot').html(jsonData[counter][3]);
+					
 				}
 		  }
         },
@@ -181,6 +189,7 @@ $("tr").click(function() {
 $("#btn_system").click(function() {
 	$("#system_div").toggle();
 });
+
 $("#btn_reset").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_reset").prop( "disabled", false );}, 3000);
@@ -191,6 +200,47 @@ $("#btn_reset").click(function() {
 		datatype:"text"
 	});
 });
+
+$("#btn_sim_bank_down").click(function() {
+	//$(this).prop( "disabled", true );
+	$.ajax({
+		type:"post",
+		url:"port/sim_bank_down",
+		data: "id="+encodeURIComponent(selectports.join()),
+		datatype:"text"
+	});
+});
+
+$("#btn_sim_bank_up").click(function() {
+	//$(this).prop( "disabled", true );
+	$.ajax({
+		type:"post",
+		url:"port/sim_bank_up",
+		data: "id="+encodeURIComponent(selectports.join()),
+		datatype:"text"
+	});
+});
+
+$("#btn_sim_bank_prev").click(function() {
+	//$(this).prop( "disabled", true );
+	$.ajax({
+		type:"post",
+		url:"port/sim_bank_prev",
+		data: "id="+encodeURIComponent(selectports.join()),
+		datatype:"text"
+	});
+});
+
+$("#btn_sim_bank_next").click(function() {
+	//$(this).prop( "disabled", true );
+	$.ajax({
+		type:"post",
+		url:"port/sim_bank_next",
+		data: "id="+encodeURIComponent(selectports.join()),
+		datatype:"text"
+	});
+});
+
 $("#btn_zapros_nomera").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_zapros_nomera").prop( "disabled", false );}, 500);
@@ -507,7 +557,7 @@ $("#btn_system_config_portsnomera").click(function() {
 $("#btn_system_config_url").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_system_config_url").prop( "disabled", false );}, 1500);
-	window.open('/config/urlsms', '_blank', 'width=450, height=300');
+	window.open('/config/urlsms', '_blank', 'width=480, height=320');
 });
 
 $("#btn_system_config_triggers").click(function() {

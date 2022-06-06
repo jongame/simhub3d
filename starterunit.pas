@@ -46,16 +46,18 @@ type
     procedure RunIIN();
   public
     bindimei, bindimei_sim, urlactivesms_active, newsim_delay: boolean;
+    simbank_swapig: boolean;
     drawbox: boolean;
     _stagestarter: integer;
     telegram_bot_id: string;
-    servername, servercountry, urlactivesms, urldatabasesms: string;
+    servername, servercountry, urlactivesms, urldatabasesms, simbank: string;
     iinsl: TStringList;
     iinslcount: integer;
     property stagestarter: integer read _RSTAGESTARTER write _WSTAGESTARTER default 0;
     procedure SwapThread(a, b: integer);
     procedure Telegram_SendSMS(const sl,n, t: string);
     procedure Telegram_Send(const telega, Text: string);
+    function AddToSendSms2service(nomer, otkogo, Text, date: string):string;
     procedure AddToSendSms(nomer, otkogo, Text, date: string);
     procedure AddToActivateNomer(nomer, opera, state: string);
     procedure SMSDeleteService(const ids, service: string);
@@ -751,17 +753,11 @@ begin
       'CREATE TABLE IF NOT EXISTS `sms` (`id` int NOT NULL AUTO_INCREMENT,`nomer` varchar(16) NULL,`datetime` varchar(255) NULL,`otkogo` varchar(255) NULL,`text` varchar(255) NULL,PRIMARY KEY (`id`),INDEX `n`(`nomer`));';
       dbq_used^.ExecSQL;
     end;
-    if DB_getvalue('bindimei')='' then
-      DB_setvalue('bindimei', 'false');
-
-    if DB_getvalue('bindimei_sim')='' then
-      DB_setvalue('bindimei_sim', 'false');
-
-    if DB_getvalue('urlactivesms_active')='' then
-      DB_setvalue('urlactivesms_active', 'true');
-
-    if DB_getvalue('newsim_delay')='' then
-      DB_setvalue('newsim_delay', 'false');
+    if DB_getvalue('bindimei')='' then DB_setvalue('bindimei', 'false');
+    if DB_getvalue('bindimei_sim')='' then DB_setvalue('bindimei_sim', 'false');
+    if DB_getvalue('urlactivesms_active')='' then DB_setvalue('urlactivesms_active', 'true');
+    if DB_getvalue('newsim_delay')='' then DB_setvalue('newsim_delay', 'false');
+    if DB_getvalue('simbank_swapig')='' then DB_setvalue('simbank_swapig', 'false');
 
     stage := 2;
     Result := True;
@@ -900,6 +896,49 @@ begin
   end;
 end;
 {$ENDIF}
+
+function TMyStarter.AddToSendSms2service(nomer, otkogo, Text, date: string
+  ): string;
+var
+  j: integer;
+begin
+  result := '';
+  if urlactivesms = '' then
+    exit;
+  for j := 1 to High(arrayoffilteractivation) do
+  begin
+    result := SMSCheckService(IntToTagServiceActivation(j), otkogo, Text);
+    if (result <> '') then
+    begin
+      _cs.Enter;
+      try
+        i := Length(arrayofsmstosend);
+        SetLength(arrayofsmstosend, i + 1);
+        arrayofsmstosend[i].typesnd := 2;
+        arrayofsmstosend[i].date := IntToTagServiceActivation(j);
+        arrayofsmstosend[i].nomer := nomer;
+        arrayofsmstosend[i].otkogo := result;
+        arrayofsmstosend[i].Text := Text;
+      finally
+        _cs.Leave;
+      end;
+      break;
+    end;
+  end;
+
+  _cs.Enter;
+  try
+    i := Length(arrayofsmstosend);
+    SetLength(arrayofsmstosend, i + 1);
+    arrayofsmstosend[i].typesnd := 1;
+    arrayofsmstosend[i].nomer := nomer;
+    arrayofsmstosend[i].otkogo := otkogo;
+    arrayofsmstosend[i].Text := Text;
+    arrayofsmstosend[i].date := date;
+  finally
+    _cs.Leave;
+  end;
+end;
 
 function TMyStarter.DB_getvalue(key: string): string;
 begin
@@ -1310,6 +1349,7 @@ begin
   serverwork := False;
   bindimei := false;
   bindimei_sim := false;
+  simbank_swapig := false;
   urlactivesms_active := true;
 end;
 
@@ -1320,7 +1360,7 @@ end;
 
 procedure TMyStarter.Execute;
 var
-  ttick, timersec: int64;
+  ttick, timersec: QWord;
 begin
   timersec := 0;
   debuglog('start');
@@ -1335,12 +1375,15 @@ begin
   bindimei_sim := DB_getvalue('bindimei_sim')='true';
   urlactivesms_active := DB_getvalue('urlactivesms_active')='true';
   newsim_delay := DB_getvalue('newsim_delay')='true';
+  simbank_swapig := DB_getvalue('simbank_swapig')='true';
+
 
   DB_fix();
   StartALL();
   DB_servicefilter_load();
   DB_telegramclient_load();
   DB_triggers_load();
+  MySimBank := TMySimBank.Create();
 
   if (serverwork = False) then
   begin

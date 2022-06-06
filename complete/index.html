@@ -42,15 +42,15 @@
 			</div>
 		</nav>    
 		<div class="container-fluid">
-			<div id="IDMAINTABLE" class="col-md-2 no-margin" style="height:1200px;overflow-y:scroll;">
+			<div id="IDMAINTABLE" class="col-md-3 no-margin" style="height:1200px;overflow-y:scroll;">
 				<table id="maintable" class="table table-hover">
 					<tbody>
-						<tr><td><div>№</div></td><td><div>Nomer</div></td><td><div>State</div></td></tr>
+						<tr><td><div>№</div></td><td><div>Nomer</div></td><td><div>State</div><td><div>SB</div></td></tr>
 						_MAIN_TABLE_TAG_
 					</tbody>
 				</table>
 			</div>
-			<div class="col-md-8 no-margin">
+			<div class="col-md-9 no-margin">
 				<div class="col-md-12 no-margin">
 					<textarea id="mainmemo"></textarea>
 				</div>
@@ -109,6 +109,15 @@
 					<div class="col-md-12">
 						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_config_triggers" >Тригер фильтр</button></div>
 						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_system_config_iin" >ИИН</button></div>
+					</div>					
+					<div class="col-md-12">
+						<div class="col-md-5 no-margin"><button class="btn btn-info btn-block" id="btn_sim_bank_down" >Пред слот</button></div>
+						<div class="col-md-2 no-margin"><h5 id="sim_bank_slot" class="text-center"></h5></div>
+						<div class="col-md-5 no-margin"><button class="btn btn-info btn-block" id="btn_sim_bank_up" >След слот</button></div>
+					</div>					
+					<div class="col-md-12">
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_sim_bank_prev" >Пред слоты</button></div>
+						<div class="col-md-6 no-margin"><button class="btn btn-info btn-block" id="btn_sim_bank_next" >След. слоты</button></div>
 					</div>
 				</div>
 				<div class="col-md-4 no-margin">

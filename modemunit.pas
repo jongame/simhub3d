@@ -9,10 +9,47 @@ uses
 
 type
 
+  { TMySimHub }
+
+  { TMySimBank }
+
+  TMySimBank = class(TThread)
+  private
+    comport: string;
+    _send_cmd, _last_recv: string;
+    _simhub_state: TSIMBANK_STATE;
+    Serial: TBlockSerial;
+    function _RSIMBANK_STATE: TSIMBANK_STATE;
+    procedure _WSIMBANK_STATE(const Value: TSIMBANK_STATE);
+    function _Rsend_cmd: string;
+    procedure _Wsend_cmd(const Value: string);
+    function _Rlast_recv: string;
+    procedure _Wlast_recv(const Value: string);
+    procedure Send(const s:string);
+    function parse_config(const c: string):string;
+    function generate_config:string;
+    function myrecv:string;
+  public
+    _cs: TCriticalSection;
+    numbers_ports: array of TSIMBANK_Sim;
+    property SIMBANK_STATE: TSIMBANK_STATE read _RSIMBANK_STATE write _WSIMBANK_STATE;
+    property send_cmd: string read _Rsend_cmd write _Wsend_cmd;
+    property last_recv: string read _Rlast_recv write _Wlast_recv;
+    procedure next_slot(id: integer = -1);
+    procedure prev_slot(id: integer = -1);
+    constructor Create();
+  protected
+    procedure Execute; override;
+  end;
+
+type
+
   { TMyModem }
 
   TMyModem = class(TThread)
   private
+    _PORT_STATE: TPORT_STATE;
+    _MODEM_STATE: byte;
     _sendtimeout, _counttimeoutsend, timeoutinsendsms: integer;//таймаут на оправку команды, количество попыток
     sendsms: array of MySmsSend;//Отправка смс
     resultcode_sendsms: integer;
@@ -52,25 +89,25 @@ type
     procedure _WCOMMENT(const Value: string);
     function _RURL: string;
     procedure _WURL(const Value: string);
-    function _Rticktack: longword;
-    procedure _Wticktack(const Value: longword);
+    function _Rlastrecv: Qword;
+    procedure _Wlastrecv(const Value: Qword);
     function _Ruserid: integer;
     procedure _Wuserid(const Value: integer);
     function _Rstatesim: TSIM_OPERATOR_STATE;
     procedure _Wstatesim(const Value: TSIM_OPERATOR_STATE);
     function _Rmodemstate: byte;
     procedure _Wmodemstate(const Value: byte);
+    function _RLAST_RESPONSE: string;
+    procedure _WLAST_RESPONSE(const Value: string);
   public
     newsim: boolean;
     secondussdcmd: string;
     _cs: TCriticalSection;
-    _ticktack: longword;
-    _PORT_STATE: TPORT_STATE;
-    _MODEM_STATE: byte;
+    _lastrecv: QWord;
     ModemModel: TSIMHUB_MODEL;
     operatorNomer: TSIM_OPERATOR;
     DEBUG_STATE, idthread, _arendatype, countsms, _userid: integer;
-
+    _last_response: string;
     RecvText, scom, _comment, _NOMER, _url, IMEI, ICC, ant, nomersmsservice, regOperator: string;
     _actsms: string;
     _SendText, _RecvText, _SmsText: TStringList;
@@ -83,7 +120,8 @@ type
     __ticktack, sec_from_start: Qword;
      _modemstate: byte;
     _statesim: TSIM_OPERATOR_STATE;
-    property ticktack: longword read _Rticktack write _Wticktack;
+    property last_response: string read _RLAST_RESPONSE write _WLAST_RESPONSE;
+    property lastrecv: QWord read _Rlastrecv write _Wlastrecv;
     property PORT_STATE: TPORT_STATE read _RPORT_STATE write _WPORT_STATE;
     property MODEM_STATE: byte read _RMODEM_STATE write _WMODEM_STATE;
     property nomer: string read _RNOMER write _WNOMER;
@@ -129,12 +167,379 @@ type
     procedure Execute; override;
   end;
 
-
-
 implementation
 
 uses
   maind;
+
+{ TMySimHub }
+
+function TMySimBank._RSIMBANK_STATE: TSIMBANK_STATE;
+begin
+  _cs.Enter;
+  try
+    Result := _simhub_state;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+procedure TMySimBank._WSIMBANK_STATE(const Value: TSIMBANK_STATE);
+begin
+  _cs.Enter;
+  try
+    _simhub_state := Value;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+function TMySimBank._Rsend_cmd: string;
+begin
+  _cs.Enter;
+  try
+    Result := _send_cmd;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+procedure TMySimBank._Wsend_cmd(const Value: string);
+begin
+  _cs.Enter;
+  try
+    _send_cmd := Value;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+function TMySimBank._Rlast_recv: string;
+begin
+  _cs.Enter;
+  try
+    Result := _last_recv;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+procedure TMySimBank._Wlast_recv(const Value: string);
+begin
+  _cs.Enter;
+  try
+    _last_recv := Value;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+procedure TMySimBank.Send(const s: string);
+var
+  sa: ansistring;
+begin
+  try
+    sa := ansistring(s) + ansichar($0D);
+    if Serial.InstanceActive then
+      Serial.SendString(sa);
+  except
+    on E: Exception do
+    begin
+      MainMemoWrite('SB send error:' + s);
+      debuglog('SB send error:' + s);
+    end;
+  end;
+end;
+
+function TMySimBank.parse_config(const c: string): string;
+var
+  s,t: string;
+begin
+  result := '';
+  s := c;
+  if Pos('=',s)=0 then
+    exit;
+  result := Copy(s, 1, Pos('=',s)-1);
+  Delete(s, 1, Pos('=',s));
+  repeat
+    try
+      SetLength(numbers_ports, Length(numbers_ports)+1);
+      if (Pos(',',s)<>0) then
+      begin
+        t := Copy(s,1,Pos(',',s)-1);
+        Delete(s, 1, Pos(',',s));
+        numbers_ports[High(numbers_ports)].idport := StrToInt(Copy(t,1,Pos(':',t)-1)) - 1;
+        Delete(t, 1, Pos(':', t));
+        numbers_ports[High(numbers_ports)].sel := StrToInt(t);
+      end
+      else
+      begin
+        numbers_ports[High(numbers_ports)].idport := StrToInt(Copy(s,1,Pos(':',s)-1)) - 1;
+        Delete(s, 1, Pos(':', s));
+        numbers_ports[High(numbers_ports)].sel := StrToInt(s);
+        s := '';
+      end;
+      numbers_ports[High(numbers_ports)].need_exe := 2;
+    except
+
+    end;
+  until s = '';
+end;
+
+function TMySimBank.generate_config: string;
+var
+  i: integer;
+begin
+  result := comport + '=';
+  _cs.Enter;
+  try
+    for i:=0 to High(numbers_ports) do
+      if i <> High(numbers_ports) then
+        result := result + IntToStr(numbers_ports[i].idport+1) + ':' + IntToStr(numbers_ports[i].sel) + ','
+      else
+        result := result + IntToStr(numbers_ports[i].idport+1) + ':' + IntToStr(numbers_ports[i].sel);
+  finally
+    _cs.Leave;
+  end;
+end;
+
+function TMySimBank.myrecv: string;
+var
+  tempsize: integer;
+  tick:QWord;
+begin
+  result := '';
+  try
+    tick := GetTickCount64();
+    while (GetTickCount64()-tick)<1500 do
+    begin
+      if Serial.CanReadEx(50)=false then
+        continue;
+      tempsize := Serial.WaitingDataEx();
+      SetLength(result, Length(result)+tempsize);
+      Serial.RecvBufferEx(@result[Length(result)-tempsize+1], tempsize, 0);
+      if Length(result)>=2 then
+        if (result[Length(result)-1]=#13)AND(result[Length(result)]=#10) then
+        begin
+          SetLength(result, Length(result)-2);
+          exit;
+        end;
+    end;
+  except
+    on E: Exception do
+    begin
+      MainMemoWrite('SB myrecv['+comport+']:' + E.ClassName + ':' + E.Message + ' ' + IntToStr(tempsize));
+      debuglog('SB myrecv['+comport+']:' + E.ClassName + ':' + E.Message + ' ' + IntToStr(tempsize));
+    end;
+  end;
+end;
+
+procedure TMySimBank.next_slot(id: integer);
+var
+  i:integer;
+begin
+  _cs.Enter;
+  try
+  for i:=0 to High(numbers_ports) do
+    begin
+      if (id=-1)OR(numbers_ports[i].idport=id) then
+      begin
+        if numbers_ports[i].sel<>16 then
+          numbers_ports[i].sel := numbers_ports[i].sel + 1
+        else
+          numbers_ports[i].sel := 1;
+        numbers_ports[i].need_exe := 2;
+      end;
+    end;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+procedure TMySimBank.prev_slot(id: integer);
+var
+  i:integer;
+begin
+  _cs.Enter;
+  try
+  for i:=0 to High(numbers_ports) do
+    begin
+      if (id=-1)OR(numbers_ports[i].idport=id) then
+      begin
+        if numbers_ports[i].sel<>1 then
+          numbers_ports[i].sel := numbers_ports[i].sel - 1
+        else
+          numbers_ports[i].sel := 16;
+        numbers_ports[i].need_exe := 2;
+      end;
+    end;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+constructor TMySimBank.Create();
+begin
+  inherited Create(False);
+  _cs := TCriticalSection.Create();
+  Serial := nil;
+  SIMBANK_STATE := SIMBANK_CREATE;
+  send_cmd := '';
+  last_recv := '';
+end;
+
+procedure TMySimBank.Execute;
+var
+  exec: boolean;
+  t: string;
+  i, ec: integer; //errorcount
+  tempSBS: TSIMBANK_Sim;
+begin
+  sleep(2500);
+  while (not Terminated) do
+  begin
+    case SIMBANK_STATE of
+      SIMBANK_CREATE:
+      begin
+        SIMBANK_STATE := SIMBANK_CONNECT;
+      end;
+      SIMBANK_CONNECT:
+      begin
+        try
+          comport := parse_config(starter.DB_getvalue('simbank_com'));
+          if comport='' then
+          begin
+            SIMBANK_STATE := SIMBANK_ERROR;
+            continue;
+          end;
+
+          Serial := TBlockSerial.Create;
+          Serial.RaiseExcept := True;
+          Serial.LinuxLock := True;
+          Serial.CloseSocket;
+          {$IFDEF UNIX}
+          Serial.Connect('/dev/serial/by-path/' + comport);
+          {$ELSE}
+          Serial.Connect(comport);
+          {$ENDIF}
+          Serial.Config(115200, 8, 'N', 0, False, False);
+          Sleep(50);
+          if (Serial.InstanceActive = False) then
+          begin
+            MainMemoWrite('SB error['+comport+']: not connect');
+            debuglog('SB error['+comport+']: not connect');
+            SIMBANK_STATE := SIMBANK_ERROR;
+          end
+          else
+          begin
+          Serial.SendString(ansistring('AT+NEXT00') + ansichar($0D));
+          t := myrecv;
+          SIMBANK_STATE := SIMBANK_WORK;
+          end;
+        except
+          on E: Exception do
+          begin
+            MainMemoWrite('SB error['+comport+']:' + E.ClassName + ':' + E.Message);
+            debuglog('SB error['+comport+']:' + E.ClassName + ':' + E.Message);
+            SIMBANK_STATE := SIMBANK_ERROR;
+          end;
+        end;
+      end;
+      SIMBANK_HELLO:
+      begin
+        ec := 0;
+        while true do
+        begin
+          Serial.SendString(ansistring('AT+CWSIM') + ansichar($0D));
+          t := myrecv;
+          debuglog('COM_RECV:'+t);
+          if t<>'CWSIM OK' then
+            inc(ec);
+          if ec>3 then
+          begin
+            debuglog('SIM BANK error');
+            SIMBANK_STATE := SIMBANK_ERROR;
+          end;
+        end;
+      end;
+      SIMBANK_WORK:
+      begin
+
+        sleep(25);
+        exec := false;
+        for i:=0 to High(numbers_ports) do
+        begin
+          _cs.Enter ;
+          try
+            if numbers_ports[i].need_exe<>0 then
+              tempSBS := numbers_ports[i]
+            else
+              continue;
+          finally
+            _cs.Leave;
+          end;
+
+          case tempSBS.need_exe of
+            1:
+            begin
+              AM[tempSBS.idport].PORT_STATE := PORT_RESTART_CFUN;
+              dec(tempSBS.need_exe);
+            end;
+            2:
+            begin
+              //debuglog(ansistring('AT+SWIT'+Format('%.2d',[i+1])+'-'+Format('%.4d',[tempSBS.sel])) + ansichar($0D));
+              Serial.SendString(ansistring('AT+SWIT'+Format('%.2d',[i+1])+'-'+Format('%.4d',[tempSBS.sel])) + ansichar($0D));
+              t := myrecv;//Serial.RecvTerminated(1500, #13 + #10);
+              //debuglog('COM_RECV2:'+t);
+              if t<>'SWITCH OK' then
+              begin
+                //debuglog('SWITCH NOT OK ['+t+']');
+                continue;
+              end;
+              dec(tempSBS.need_exe);
+            end;
+          end;
+          if tempSBS.need_exe<>numbers_ports[i].need_exe then
+          begin
+            _cs.Enter ;
+            try
+              if (numbers_ports[i].sel = tempSBS.sel) then
+              begin
+                numbers_ports[i] := tempSBS;
+                exec := true;
+              end;
+            finally
+              _cs.Leave;
+            end;
+          end;
+        end;
+
+        if exec then
+        begin
+          starter.DB_setvalue('simbank_com',generate_config());
+        end;
+      end;
+      SIMBANK_ERROR:
+      begin
+        sleep(5);
+      end;
+      SIMBANK_DISONNECT:
+      begin
+
+      end;
+      SIMBANK_RESTART:
+      begin
+        if serial<>nil then
+        begin
+          Serial.CloseSocket;
+          FreeAndNil(Serial);
+        end;
+        SIMBANK_STATE := SIMBANK_CONNECT;
+      end;
+    end;
+  end;
+  Serial.Free;
+end;
 
 procedure TMyModem.Str2Operator(s: string);
 var
@@ -201,7 +606,7 @@ end;
 
 function TMyModem.GetLuna(num: string): string;
 var
-  p, sum, N, i:integer;
+  p, sum, i:integer;
 begin
   try
   result:='0';
@@ -507,21 +912,21 @@ begin
   end;
 end;
 
-function TMyModem._Rticktack: longword;
+function TMyModem._Rlastrecv: Qword;
 begin
   _cs.Enter;
   try
-    Result := _ticktack;
+    Result := _lastrecv;
   finally
     _cs.Leave;
   end;
 end;
 
-procedure TMyModem._Wticktack(const Value: longword);
+procedure TMyModem._Wlastrecv(const Value: Qword);
 begin
   _cs.Enter;
   try
-    _ticktack := Value;
+    _lastrecv := Value;
   finally
     _cs.Leave;
   end;
@@ -587,14 +992,34 @@ begin
   end;
 end;
 
+function TMyModem._RLAST_RESPONSE: string;
+begin
+  _cs.Enter;
+  try
+    Result := _last_response;
+  finally
+    _cs.Leave;
+  end;
+end;
+
+procedure TMyModem._WLAST_RESPONSE(const Value: string);
+begin
+  _cs.Enter;
+  try
+    _last_response := Value;
+  finally
+    _cs.Leave;
+  end;
+end;
+
 constructor TMyModem.Create(i: integer);
 begin
   inherited Create(False);
   secondussdcmd := '';
   _cs := TCriticalSection.Create();
-  ticktack := GetTickCount64();
   idthread := i;
   __ticktack := GetTickCount64();
+  lastrecv := GetTickCount64();
   sec_from_start := 0;
   PORT_STATE := PORT_CREATE;
   MODEM_STATE := MODEM_NULL;
@@ -615,6 +1040,7 @@ begin
   ICC := '123456789012345';
   ant := '';
   nomersmsservice := '';
+  _last_response := '';
   regOperator := '';
   SetLength(smshistory, 0);
   modemstate := $ff;
@@ -1383,6 +1809,13 @@ begin
   ShowSms(Notkogo, '[' + date + ']' + Notkogo + '->' + Text);
   starter.Telegram_SendSMS(nomer, Notkogo, Text);
   SMSHistoryAdd(date, Notkogo, Text);
+  if (starter.simbank_swapig) then
+  begin
+    if starter.SMSCheckService('ig', Notkogo, Text)<>'' then
+    begin
+      MySimBank.next_slot(idthread);
+    end;
+  end;
   starter.AddToSendSms(nomer, Notkogo, Text, date);
 end;
 
@@ -1566,7 +1999,7 @@ begin
           PORT_STATE := PORT_RESTART;
           __ticktack := GetTickCount64();
         end;
-        if ((sec_from_start mod 15) = 0) then
+        if ((sec_from_start mod 30) = 0) then
         begin
           MODEM_STATE := MODEM_NEED_RESTART_AT_CPMS;
           __ticktack := GetTickCount64();
@@ -1658,6 +2091,7 @@ var
   buff: array of byte;
   OKIN: boolean;
 begin
+  lastrecv := GetTickCount64();
   DEBUG_STATE := 1;
   tempsize := Serial.WaitingDataEx();
   SetLength(buff, tempsize);
@@ -1684,6 +2118,7 @@ begin
     begin
       OKIN := True;
       sOk := Copy(temp, 1, Pos('OK' + #10, temp) + 1);
+      last_response := StringReplace(sOK, #10, '', [rfreplaceall]);
       s := StringReplace(temp, #10, '<CR>', [rfreplaceall]);
       Delete(RecvText, 1, Pos('OK' + #10, RecvText) + 2);
       DEBUG_STATE := 3;
@@ -1692,6 +2127,7 @@ begin
       while Pos(#10, temp) <> 0 do
       begin
         s := s + Copy(temp, 1, Pos(#10, temp));
+        last_response := s;
         Delete(temp, 1, Pos(#10, temp));
         DEBUG_STATE := 4;
       end;
@@ -2025,6 +2461,13 @@ begin
             exit;
           end;
         end;
+        MODEM_AR_CPMS,MODEM_AR_CPBR:
+        begin
+          if (Pos('+CME ERROR', s) <> 0) then
+              PORT_STATE := PORT_RESTART;
+          if (Pos('+CMS ERROR', s) <> 0) then
+              PORT_STATE := PORT_RESTART;
+        end;
         MODEM_AS_DELETEMSG:
         begin
           if (Pos('^SYSSTART', s) <> 0) then
@@ -2080,10 +2523,8 @@ begin
           begin
             if (ParseError(s)=3517)AND(ModemModel=M35) then //Смена IMEI
             begin
-              {TextSmsAdd('Смена IMEI.0');
-              Send('AT+EGMR=1,7,"'+GetRandomIMEI()+'"');   }
-              sleep(2500);
-              PORT_STATE := PORT_RESTART;
+              TextSmsAdd('Нет сим карты, перезагрузка');
+              PORT_STATE := PORT_RESTART_CFUN;
             end;
           end;
         end;
@@ -2138,7 +2579,16 @@ begin
         PORT_STATE := PORT_WAIT;
         Serial.CloseSocket;
       end;
-
+      PORT_RESTART_CFUN:
+      begin
+        if (GetTickCount64()-lastrecv)<250 then
+          continue;
+        Send('AT+CFUN=1,1');
+        sleep(150);
+        Serial.CloseSocket;
+        sleep(4000);
+        PORT_STATE := PORT_WAIT;
+      end;
       //Ждём запуска или отдыхаем
       PORT_CREATE, PORT_WAIT:
       begin

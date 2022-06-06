@@ -98,7 +98,7 @@ begin
   result := '';
   while UTF8Length(s)<>0 do
   begin
-    c := UTF8CharacterToUnicode(@s[1], l);
+    c := UTF8CodepointToUnicode(@s[1], l);
     if (l<>2) then
       result := result + '00' + IntToHex(c, 2)
     else
@@ -976,7 +976,7 @@ var
 begin
   result := '';
   for i:= 0 to c-1 do begin
-    result += '<tr id="'+inttostr(i)+'"><td><div>'+Format('%2d',[i+1])+'</div></td><td><div class="nomer">Не_Определен</div></td><td><div class="state alert-danger">0</div></td></tr>';
+    result += '<tr id="'+inttostr(i)+'"><td><div>'+Format('%2d',[i+1])+'</div></td><td><div class="nomer">Не_Определен</div></td><td><div class="state alert-danger">0</div></td><td><div class="sb_slot"></div></td></tr>';
   end;
 end;
 

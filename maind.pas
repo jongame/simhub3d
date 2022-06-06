@@ -15,7 +15,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 122;
+  version = 123;
 
 var
   timestart: string;
@@ -29,6 +29,7 @@ var
   Last10sms: array of array of string;
   AM: array of TMyModem;
   starter: TMyStarter = nil;
+  MySimBank: TMySimBank = nil;
   starterwork: boolean = True;
   serverwork: boolean = True;
   SimPort: integer = 0;
@@ -78,7 +79,6 @@ end;
 procedure dMain();
 var
   Text, exp, res: string;
-  f : textfile;
 begin
   writeln('v', version);
   if FileExists(extractfilepath(paramstr(0))+'upd.bat') then
