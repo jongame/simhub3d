@@ -176,13 +176,20 @@ begin
         starter.DB_setvalue('urldatabasesms', DecodeURL(ReplaceString(d.Values['urldatabasesms'], '+', '%20')));
         starter.DB_setvalue('servername', starter.servername);
         starter.DB_setvalue('servercountry', starter.servercountry);
-        starter.DB_setvalue('simbank_com', DecodeURL(ReplaceString(d.Values['simbank_com'], '+', '%20')));
         starter.bindimei_sim := d.IndexOfName('bindimei_sim')<>-1;
         starter.DB_setvalue('bindimei_sim', ifthen(starter.bindimei_sim, 'true', 'false'));
         starter.newsim_delay := d.IndexOfName('newsim_delay')<>-1;
         starter.DB_setvalue('newsim_delay', ifthen(starter.newsim_delay, 'true', 'false'));
+        Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>';
+      end;
+      '/config/simbank':
+      begin
+        Headers.Clear;
+        Headers.Add('Content-type: Text/Html; charset=utf-8');
+        starter.DB_setvalue('simbank_com', DecodeURL(ReplaceString(d.Values['simbank_com'], '+', '%20')));
         starter.simbank_swapig := d.IndexOfName('simbank_swapig')<>-1;
         starter.DB_setvalue('simbank_swapig', ifthen(starter.simbank_swapig, 'true', 'false'));
+        MySimBank.SIMBANK_STATE := SIMBANK_LOAD;
         Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Обновил.</p></body>';
       end;
       '/config/delete_services':
@@ -250,7 +257,7 @@ begin
                 if (MySimBank.numbers_ports[i].sel>1) then
                 begin
                   MySimBank.numbers_ports[i].sel := MySimBank.numbers_ports[i].sel - 1;
-                  MySimBank.numbers_ports[i].need_exe := 2;
+                  MySimBank.numbers_ports[i].need_exe := true;
                 end;
             finally
               MySimBank._cs.Leave;
@@ -266,7 +273,7 @@ begin
                 if (MySimBank.numbers_ports[i].sel>1) then
                 begin
                   MySimBank.numbers_ports[i].sel := MySimBank.numbers_ports[i].sel - 1;
-                  MySimBank.numbers_ports[i].need_exe := 2;
+                  MySimBank.numbers_ports[i].need_exe := true;
                 end;
             finally
               MySimBank._cs.Leave;
@@ -290,7 +297,7 @@ begin
                 if (MySimBank.numbers_ports[i].sel<16) then
                 begin
                   MySimBank.numbers_ports[i].sel := MySimBank.numbers_ports[i].sel + 1;
-                  MySimBank.numbers_ports[i].need_exe := 2;
+                  MySimBank.numbers_ports[i].need_exe := true;
                 end;
             finally
               MySimBank._cs.Leave;
@@ -306,7 +313,7 @@ begin
                 if (MySimBank.numbers_ports[i].sel<16) then
                 begin
                   MySimBank.numbers_ports[i].sel := MySimBank.numbers_ports[i].sel + 1;
-                  MySimBank.numbers_ports[i].need_exe := 2;
+                  MySimBank.numbers_ports[i].need_exe := true;
                 end;
             finally
               MySimBank._cs.Leave;
@@ -1301,10 +1308,13 @@ begin
                           '<p style="margin-bottom: 0px;margin-top: 0px;">Страна сим карт(ru\uk\kz)</p><input type="text" size="60" name="servercountry" value="' + starter.servercountry + '">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">URL активации:</p><input type="text" size="60" name="urlactivesms" value="' + starter.urlactivesms + '">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">База данных (user:password@hostname:port):</p><input type="text" size="60" name="urldatabasesms" value="' + starter.DB_getvalue('urldatabasesms') + '"><br>'+
-                          '<p style="margin-bottom: 0px;margin-top: 0px;">SIM Bank(ПОРТ=№ модема:Слот по умолчанию,..):</p><input type="text" size="60" name="simbank_com" value="' + starter.DB_getvalue('simbank_com') + '"><br>'+
-                          '<input type="checkbox" '+ifthen(starter.simbank_swapig, 'checked ', '')+' name="simbank_swapig" value="1">Переключать слот при IG<br>'+
                           '<input type="checkbox" '+ifthen(starter.bindimei_sim, 'checked ', '')+' name="bindimei_sim" value="1">Привязка IMEI к SIM(M35 only)<br>'+
                           '<input type="checkbox" '+ifthen(starter.newsim_delay, 'checked ', '')+' name="newsim_delay" value="1">15 мин ожидание, новой сим<br>'+
+                          '<input type="submit" value="Сохранить"></form></body></html>';
+              'simbank': l.Text := '<html><head><meta http-equiv="content-type" content="text/html; charset=UTF-8"></head><body><form action="/config/simbank" method="post">'+
+                          '<p style="margin-bottom: 0px;margin-top: 0px;">SIM Bank(ПОРТ=№ модема:Слот по умолчанию,..):</p>'+
+                          '<textarea rows="10" cols="55" name="simbank_com">' + starter.DB_getvalue('simbank_com') + '</textarea><br>'+
+                          '<input type="checkbox" '+ifthen(starter.simbank_swapig, 'checked ', '')+' name="simbank_swapig" value="1">Переключать слот при IG<br>'+
                           '<input type="submit" value="Сохранить"></form></body></html>';
               'delete_services':
               begin

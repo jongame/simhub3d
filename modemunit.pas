@@ -15,7 +15,6 @@ type
 
   TMySimBank = class(TThread)
   private
-    comport: string;
     _send_cmd, _last_recv: string;
     _simhub_state: TSIMBANK_STATE;
     Serial: TBlockSerial;
@@ -25,10 +24,10 @@ type
     procedure _Wsend_cmd(const Value: string);
     function _Rlast_recv: string;
     procedure _Wlast_recv(const Value: string);
-    procedure Send(const s:string);
-    function parse_config(const c: string):string;
-    function generate_config:string;
-    function myrecv:string;
+    function load_config():boolean;
+    procedure save_config;
+    function recv_disconnect:string;
+    function connect_send(c,s: string):boolean;
   public
     _cs: TCriticalSection;
     numbers_ports: array of TSIMBANK_Sim;
@@ -234,76 +233,96 @@ begin
   end;
 end;
 
-procedure TMySimBank.Send(const s: string);
+function TMySimBank.load_config: boolean;
 var
-  sa: ansistring;
+  sl: TStringList;
+  s,c,t: string;
+  i: integer;
 begin
+  result := false;
+  SetLength(numbers_ports, 0);
+  sl := TStringList.Create;
   try
-    sa := ansistring(s) + ansichar($0D);
-    if Serial.InstanceActive then
-      Serial.SendString(sa);
-  except
-    on E: Exception do
+    sl.Text := starter.DB_getvalue('simbank_com');
+    if sl.Text='' then
+      exit;
+    result := true;
+    for i := 0 to sl.Count - 1 do
     begin
-      MainMemoWrite('SB send error:' + s);
-      debuglog('SB send error:' + s);
+      s := sl.Strings[i];
+      if Pos('=',s)=0 then
+        continue;
+      c := Copy(s, 1, Pos('=',s)-1);
+      Delete(s, 1, Pos('=',s));
+      repeat
+        try
+          SetLength(numbers_ports, Length(numbers_ports)+1);
+          if (Pos(',',s)<>0) then
+          begin
+            numbers_ports[High(numbers_ports)].com_port:= c;
+            t := Copy(s,1,Pos(',',s)-1);
+            Delete(s, 1, Pos(',',s));
+            numbers_ports[High(numbers_ports)].idport := StrToInt(Copy(t,1,Pos(':',t)-1)) - 1;
+            Delete(t, 1, Pos(':', t));
+            numbers_ports[High(numbers_ports)].sel := StrToInt(t);
+          end
+          else
+          begin
+            numbers_ports[High(numbers_ports)].com_port:= c;
+            numbers_ports[High(numbers_ports)].idport := StrToInt(Copy(s,1,Pos(':',s)-1)) - 1;
+            Delete(s, 1, Pos(':', s));
+            numbers_ports[High(numbers_ports)].sel := StrToInt(s);
+            s := '';
+          end;
+          numbers_ports[High(numbers_ports)].need_exe := true;
+        except
+
+        end;
+      until s = '';
     end;
+  finally
+    sl.Free;
   end;
 end;
 
-function TMySimBank.parse_config(const c: string): string;
-var
-  s,t: string;
-begin
-  result := '';
-  s := c;
-  if Pos('=',s)=0 then
-    exit;
-  result := Copy(s, 1, Pos('=',s)-1);
-  Delete(s, 1, Pos('=',s));
-  repeat
-    try
-      SetLength(numbers_ports, Length(numbers_ports)+1);
-      if (Pos(',',s)<>0) then
-      begin
-        t := Copy(s,1,Pos(',',s)-1);
-        Delete(s, 1, Pos(',',s));
-        numbers_ports[High(numbers_ports)].idport := StrToInt(Copy(t,1,Pos(':',t)-1)) - 1;
-        Delete(t, 1, Pos(':', t));
-        numbers_ports[High(numbers_ports)].sel := StrToInt(t);
-      end
-      else
-      begin
-        numbers_ports[High(numbers_ports)].idport := StrToInt(Copy(s,1,Pos(':',s)-1)) - 1;
-        Delete(s, 1, Pos(':', s));
-        numbers_ports[High(numbers_ports)].sel := StrToInt(s);
-        s := '';
-      end;
-      numbers_ports[High(numbers_ports)].need_exe := 2;
-    except
-
-    end;
-  until s = '';
-end;
-
-function TMySimBank.generate_config: string;
+procedure TMySimBank.save_config;
 var
   i: integer;
+  c, s: string;
+  sl: TStringList;
 begin
-  result := comport + '=';
+  c := '';
+  s := '';
+  sl := TStringList.Create;
   _cs.Enter;
   try
     for i:=0 to High(numbers_ports) do
-      if i <> High(numbers_ports) then
-        result := result + IntToStr(numbers_ports[i].idport+1) + ':' + IntToStr(numbers_ports[i].sel) + ','
-      else
-        result := result + IntToStr(numbers_ports[i].idport+1) + ':' + IntToStr(numbers_ports[i].sel);
+    begin
+      if c<>numbers_ports[i].com_port then
+      begin
+        if s<>'' then
+        begin
+          if s[Length(s)]=',' then
+            SetLength(s, Length(s)-1);
+          sl.Add(s);
+        end;
+        c := numbers_ports[i].com_port;
+        s := numbers_ports[i].com_port + '=';
+      end;
+      s := s + IntToStr(numbers_ports[i].idport+1) + ':' + IntToStr(numbers_ports[i].sel) + ','
+    end;
+    if s[Length(s)]=',' then
+      SetLength(s, Length(s)-1);
+    sl.Add(s);
+    starter.DB_setvalue('simbank_com', sl.Text);
   finally
+    sl.Free;
     _cs.Leave;
   end;
+
 end;
 
-function TMySimBank.myrecv: string;
+function TMySimBank.recv_disconnect: string;
 var
   tempsize: integer;
   tick:QWord;
@@ -322,17 +341,37 @@ begin
         if (result[Length(result)-1]=#13)AND(result[Length(result)]=#10) then
         begin
           SetLength(result, Length(result)-2);
+          Serial.CloseSocket;
           exit;
         end;
     end;
   except
     on E: Exception do
     begin
-      MainMemoWrite('SB myrecv['+comport+']:' + E.ClassName + ':' + E.Message + ' ' + IntToStr(tempsize));
-      debuglog('SB myrecv['+comport+']:' + E.ClassName + ':' + E.Message + ' ' + IntToStr(tempsize));
+      MainMemoWrite('SB rd:' + E.ClassName + ':' + E.Message + ' ' + IntToStr(tempsize));
+      debuglog('SB rd:' + E.ClassName + ':' + E.Message + ' ' + IntToStr(tempsize));
     end;
   end;
 end;
+
+function TMySimBank.connect_send(c, s: string): boolean;
+begin
+  result := false;
+  {$IFDEF UNIX}
+  Serial.Connect('/dev/serial/by-path/' + c);
+  {$ELSE}
+  Serial.Connect(c);
+  {$ENDIF}
+  sleep(50);
+  Serial.Config(115200, 8, 'N', 0, False, False);
+  sleep(50);
+  if (Serial.InstanceActive = False) then
+    exit
+  else
+    Serial.SendString(ansistring(s) + ansichar($0D));
+  result := true;
+end;
+
 
 procedure TMySimBank.next_slot(id: integer);
 var
@@ -348,7 +387,7 @@ begin
           numbers_ports[i].sel := numbers_ports[i].sel + 1
         else
           numbers_ports[i].sel := 1;
-        numbers_ports[i].need_exe := 2;
+        numbers_ports[i].need_exe := true;
       end;
     end;
   finally
@@ -370,7 +409,7 @@ begin
           numbers_ports[i].sel := numbers_ports[i].sel - 1
         else
           numbers_ports[i].sel := 16;
-        numbers_ports[i].need_exe := 2;
+        numbers_ports[i].need_exe := true;
       end;
     end;
   finally
@@ -391,7 +430,7 @@ end;
 procedure TMySimBank.Execute;
 var
   exec: boolean;
-  t: string;
+  t, r: string;
   i, ec: integer; //errorcount
   tempSBS: TSIMBANK_Sim;
 begin
@@ -401,131 +440,105 @@ begin
     case SIMBANK_STATE of
       SIMBANK_CREATE:
       begin
-        SIMBANK_STATE := SIMBANK_CONNECT;
+        SIMBANK_STATE := SIMBANK_LOAD;
       end;
-      SIMBANK_CONNECT:
+      SIMBANK_LOAD:
       begin
         try
-          comport := parse_config(starter.DB_getvalue('simbank_com'));
-          if comport='' then
+          if load_config()=false then
           begin
-            SIMBANK_STATE := SIMBANK_ERROR;
+            SIMBANK_STATE := SIMBANK_NOT_WORK;
             continue;
           end;
 
           Serial := TBlockSerial.Create;
           Serial.RaiseExcept := True;
           Serial.LinuxLock := True;
-          Serial.CloseSocket;
-          {$IFDEF UNIX}
-          Serial.Connect('/dev/serial/by-path/' + comport);
-          {$ELSE}
-          Serial.Connect(comport);
-          {$ENDIF}
-          Serial.Config(115200, 8, 'N', 0, False, False);
-          Sleep(50);
-          if (Serial.InstanceActive = False) then
-          begin
-            MainMemoWrite('SB error['+comport+']: not connect');
-            debuglog('SB error['+comport+']: not connect');
-            SIMBANK_STATE := SIMBANK_ERROR;
-          end
-          else
-          begin
-          Serial.SendString(ansistring('AT+NEXT00') + ansichar($0D));
-          t := myrecv;
+          //Serial.CloseSocket;
+          {t := '';
+          for i:=0 to High(numbers_ports) do
+            if t<>numbers_ports[i].com_port then
+            begin
+              t := numbers_ports[i].com_port;
+              if connect_send(numbers_ports[i].com_port, 'AT+NEXT00')=false then
+              begin
+                MainMemoWrite('SB error['+t+']: not connect');
+                debuglog('SB error['+t+']: not connect');
+                sleep(1000);
+                continue;
+              end
+              else
+              begin
+                r := recv_disconnect;
+                if (r<>'RESET OK') then
+                begin
+                  MainMemoWrite('SB error['+t+']: not connect');
+                  debuglog('SB error['+t+']: not connect');
+                end;
+              end;
+            end;   }
           SIMBANK_STATE := SIMBANK_WORK;
-          end;
         except
           on E: Exception do
           begin
-            MainMemoWrite('SB error['+comport+']:' + E.ClassName + ':' + E.Message);
-            debuglog('SB error['+comport+']:' + E.ClassName + ':' + E.Message);
-            SIMBANK_STATE := SIMBANK_ERROR;
-          end;
-        end;
-      end;
-      SIMBANK_HELLO:
-      begin
-        ec := 0;
-        while true do
-        begin
-          Serial.SendString(ansistring('AT+CWSIM') + ansichar($0D));
-          t := myrecv;
-          debuglog('COM_RECV:'+t);
-          if t<>'CWSIM OK' then
-            inc(ec);
-          if ec>3 then
-          begin
-            debuglog('SIM BANK error');
+            MainMemoWrite('SB error['+t+']:' + E.ClassName + ':' + E.Message);
+            debuglog('SB error['+t+']:' + E.ClassName + ':' + E.Message);
             SIMBANK_STATE := SIMBANK_ERROR;
           end;
         end;
       end;
       SIMBANK_WORK:
       begin
-
         sleep(25);
         exec := false;
         for i:=0 to High(numbers_ports) do
         begin
           _cs.Enter ;
           try
-            if numbers_ports[i].need_exe<>0 then
+            if numbers_ports[i].need_exe then
               tempSBS := numbers_ports[i]
             else
               continue;
           finally
             _cs.Leave;
           end;
-
-          case tempSBS.need_exe of
-            1:
-            begin
-              AM[tempSBS.idport].PORT_STATE := PORT_RESTART_CFUN;
-              dec(tempSBS.need_exe);
-            end;
-            2:
-            begin
-              //debuglog(ansistring('AT+SWIT'+Format('%.2d',[i+1])+'-'+Format('%.4d',[tempSBS.sel])) + ansichar($0D));
-              Serial.SendString(ansistring('AT+SWIT'+Format('%.2d',[i+1])+'-'+Format('%.4d',[tempSBS.sel])) + ansichar($0D));
-              t := myrecv;//Serial.RecvTerminated(1500, #13 + #10);
-              //debuglog('COM_RECV2:'+t);
-              if t<>'SWITCH OK' then
-              begin
-                //debuglog('SWITCH NOT OK ['+t+']');
-                continue;
-              end;
-              dec(tempSBS.need_exe);
-            end;
-          end;
-          if tempSBS.need_exe<>numbers_ports[i].need_exe then
+          if connect_send(tempSBS.com_port, 'AT+SWIT'+Format('%.2d',[i+1])+'-'+Format('%.4d',[tempSBS.sel]))=false then
           begin
-            _cs.Enter ;
-            try
-              if (numbers_ports[i].sel = tempSBS.sel) then
-              begin
-                numbers_ports[i] := tempSBS;
-                exec := true;
-              end;
-            finally
-              _cs.Leave;
+            debuglog('SB cs error: ' + tempSBS.com_port + ' ' + 'AT+SWIT'+Format('%.2d',[i+1])+'-'+Format('%.4d',[tempSBS.sel]));
+            sleep(1000);
+            continue;
+          end;
+          sleep(50);
+          r := recv_disconnect;
+          if r<>'SWITCH OK' then
+          begin
+            debuglog('SWITCH NOT OK ['+r+']['+tempSBS.com_port+']');
+            continue;
+          end;
+          AM[tempSBS.idport].PORT_STATE := PORT_RESTART_CFUN;
+          tempSBS.need_exe := false;
+          _cs.Enter ;
+          try
+            if (numbers_ports[i].sel = tempSBS.sel) then
+            begin
+              numbers_ports[i] := tempSBS;
+              exec := true;
             end;
+          finally
+            _cs.Leave;
           end;
         end;
 
         if exec then
-        begin
-          starter.DB_setvalue('simbank_com',generate_config());
-        end;
+          save_config();
       end;
       SIMBANK_ERROR:
       begin
-        sleep(5);
+        sleep(250);
       end;
-      SIMBANK_DISONNECT:
+      SIMBANK_NOT_WORK:
       begin
-
+        sleep(250);
       end;
       SIMBANK_RESTART:
       begin
@@ -534,7 +547,7 @@ begin
           Serial.CloseSocket;
           FreeAndNil(Serial);
         end;
-        SIMBANK_STATE := SIMBANK_CONNECT;
+        SIMBANK_STATE := SIMBANK_LOAD;
       end;
     end;
   end;

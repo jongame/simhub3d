@@ -566,6 +566,12 @@ $("#btn_system_config_triggers").click(function() {
 	window.open('/config/triggers', '_blank', 'width=450, height=300');
 });
 
+$("#btn_sim_bank_config").click(function() {
+	$(this).prop( "disabled", true );
+	setTimeout(function() {$("#btn_sim_bank_config").prop( "disabled", false );}, 1500);
+	window.open('/config/simbank', '_blank', 'width=450, height=300');
+});
+
 $("#btn_system_config_iin").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_system_config_iin").prop( "disabled", false );}, 1500);
