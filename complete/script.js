@@ -569,7 +569,7 @@ $("#btn_system_config_triggers").click(function() {
 $("#btn_sim_bank_config").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_sim_bank_config").prop( "disabled", false );}, 1500);
-	window.open('/config/simbank', '_blank', 'width=450, height=300');
+	window.open('/config/simbank', '_blank', 'width=600, height=325');
 });
 
 $("#btn_system_config_iin").click(function() {
