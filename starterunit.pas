@@ -565,7 +565,7 @@ begin
       on E : Exception do
         debuglog('SendSMSToServer:'+E.ClassName+' : '+E.Message);
     end;
-    if logs then
+    if (logs)or(HTTP.ResultCode<>200) then
       debuglog('SendSMSToServer:'+IntToStr(HTTP.ResultCode)+' : '+url+' : '+Data);
   finally
     HTTP.Free;
@@ -601,8 +601,9 @@ begin
       Free;
     end;
   debuglog('send nomera');
-  if SendSMSToServer(urlactivesms, s) <> 'ok' then
-    debuglog('Ошибка отправки на сервер. Сервер не сказал ok.');
+  t := SendSMSToServer(urlactivesms, s);
+  if t <> 'ok' then
+    debuglog('Ошибка отправки на сервер. Сервер не сказал ok.' + t);
 end;
 
 procedure TMyStarter.CheckSendSMS();
@@ -763,7 +764,7 @@ begin
     Result := True;
   except
     on E: Exception do
-      ShowInfo(E.ClassName + ':' + E.Message + IntToStr(stage));
+      ShowInfo(E.ClassName + ':' + E.Message + ' ' + IntToStr(stage));
   end;
   _cs.Leave;
 end;
@@ -1367,7 +1368,11 @@ begin
   ShowInfo('Запускаю...');
   if (DB_open() = False) then
   begin
-    ShowInfo('Ошибка файла data.db');
+    ShowInfo('Ошибка файла DB, перезапуск');
+    sleep(2500);
+    start_self();
+    serverwork := false;
+    starterwork := false;
     exit; //Ошибка бд.
   end;
 
@@ -1388,9 +1393,9 @@ begin
   if (serverwork = False) then
   begin
     ShowInfo('Ошибка запуска.');
-    sleep(2500);
+    sleep(1500);
     stagestarter := 666;
-    starterwork := False;
+    starterwork := false;
     exit();
   end;
   TTCPHttpDaemon.Create;

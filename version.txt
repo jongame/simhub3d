@@ -1,1 +1,1 @@
-123=https://github.com/jongame/simhub3d/releases/download/v123/SIMHUB3D.exe
+124=https://github.com/jongame/simhub3d/releases/download/v124/SIMHUB3D.exe
