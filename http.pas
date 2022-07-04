@@ -172,10 +172,12 @@ begin
         starter.urlactivesms := DecodeURL(ReplaceString(d.Values['urlactivesms'], '+', '%20'));
         starter.servername := DecodeURL(ReplaceString(d.Values['servername'], '+', '%20'));
         starter.servercountry := DecodeURL(ReplaceString(d.Values['servercountry'], '+', '%20'));
+        starter.reset_timer := StrToInt(DecodeURL(ReplaceString(d.Values['reset_timer'], '+', '%20')));
         starter.DB_setvalue('urlactivesms', starter.urlactivesms);
         starter.DB_setvalue('urldatabasesms', DecodeURL(ReplaceString(d.Values['urldatabasesms'], '+', '%20')));
         starter.DB_setvalue('servername', starter.servername);
         starter.DB_setvalue('servercountry', starter.servercountry);
+        starter.DB_setvalue('reset_timer', IntToStr(starter.reset_timer));
         starter.bindimei_sim := d.IndexOfName('bindimei_sim')<>-1;
         starter.DB_setvalue('bindimei_sim', ifthen(starter.bindimei_sim, 'true', 'false'));
         starter.newsim_delay := d.IndexOfName('newsim_delay')<>-1;
@@ -1310,6 +1312,7 @@ begin
                           '<p style="margin-bottom: 0px;margin-top: 0px;">База данных (user:password@hostname:port):</p><input type="text" size="60" name="urldatabasesms" value="' + starter.DB_getvalue('urldatabasesms') + '"><br>'+
                           '<input type="checkbox" '+ifthen(starter.bindimei_sim, 'checked ', '')+' name="bindimei_sim" value="1">Привязка IMEI к SIM(M35 only)<br>'+
                           '<input type="checkbox" '+ifthen(starter.newsim_delay, 'checked ', '')+' name="newsim_delay" value="1">15 мин ожидание, новой сим<br>'+
+                          '<p style="margin-bottom: 0px;margin-top: 0px;">Таймер перезагрузки (0 - отключено):</p><input type="number" size="20" name="reset_timer" value="' + IntToStr(starter.reset_timer) + '"><br>'+
                           '<input type="submit" value="Сохранить"></form></body></html>';
               'simbank': l.Text := '<html><head><meta http-equiv="content-type" content="text/html; charset=UTF-8"></head><body><form action="/config/simbank" method="post">'+
                           '<p style="margin-bottom: 0px;margin-top: 0px;">SIM Bank(ПОРТ=№ модема:Слот по умолчанию,..):</p>'+

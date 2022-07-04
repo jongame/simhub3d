@@ -46,6 +46,7 @@ type
     procedure RunIIN();
   public
     bindimei, bindimei_sim, urlactivesms_active, newsim_delay: boolean;
+    reset_timer: integer;
     simbank_swapig: boolean;
     drawbox: boolean;
     _stagestarter: integer;
@@ -759,6 +760,7 @@ begin
     if DB_getvalue('urlactivesms_active')='' then DB_setvalue('urlactivesms_active', 'true');
     if DB_getvalue('newsim_delay')='' then DB_setvalue('newsim_delay', 'false');
     if DB_getvalue('simbank_swapig')='' then DB_setvalue('simbank_swapig', 'false');
+    if DB_getvalue('reset_timer')='' then DB_setvalue('reset_timer', '180');
 
     stage := 2;
     Result := True;
@@ -1381,7 +1383,7 @@ begin
   urlactivesms_active := DB_getvalue('urlactivesms_active')='true';
   newsim_delay := DB_getvalue('newsim_delay')='true';
   simbank_swapig := DB_getvalue('simbank_swapig')='true';
-
+  reset_timer := StrToInt(DB_getvalue('reset_timer'));
 
   DB_fix();
   StartALL();
@@ -1408,7 +1410,7 @@ begin
       sleep(5);
     inc(timersec);
     ttick := GetTickCount64() - (GetTickCount64() - ttick - 1000);
-    if ((timersec mod 180) = 0) then  //Говорю серверу что онлайн и перезапуск раз в 180 секунд
+    if ((reset_timer<>0) AND ((timersec mod reset_timer) = 0)) then  //Говорю серверу что онлайн и перезапуск раз в 180 секунд
     begin
       SendNomeraToServer();
       start_self();
