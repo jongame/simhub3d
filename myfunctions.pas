@@ -19,7 +19,6 @@ type
   TArrayofbyte = array of byte;
 
 function TagServiceToIntActivation(s: string): integer;
-function IntToTagServiceActivation(i: integer): string;
 
 //function TagOperatorToInt(const a: string): TSIM_OPERATOR;
 //function IntOperatorToTag(const a: TSIM_OPERATOR): string;
@@ -131,56 +130,15 @@ begin
 end;
 
 function TagServiceToIntActivation(s: string): integer;
+var
+  i: integer;
 begin
   result := -1;
-  case s of
-    'ignore': result :=  0;
-    'aa': result :=  1;
-    'fb': result :=  2;
-    'vk': result :=  3;
-    'ma': result :=  4;
-    'ya': result :=  5;
-    'go': result :=  6;
-    'ig': result :=  7;
-    'sn': result :=  8;
-    'tg': result :=  9;
-    'wa': result := 10;
-    'vi': result := 11;
-    'av': result := 12;
-    'tw': result := 13;
-    'ub': result := 14;
-    'qw': result := 15;
-    'gt': result := 16;
-    'ok': result := 17;
-    'wb': result := 18;
-  end;
+  for i := Low(tag_services) to High(tag_services) do
+    if tag_services[i] = s then
+      exit(i);
 end;
 
-function IntToTagServiceActivation(i: integer): string;
-begin
-  result := '';
-  case i of
-     0: result := 'ignore';
-     1: result := 'aa';
-     2: result := 'fb';
-     3: result := 'vk';
-     4: result := 'ma';
-     5: result := 'ya';
-     6: result := 'go';
-     7: result := 'ig';
-     8: result := 'sn';
-     9: result := 'tg';
-    10: result := 'wa';
-    11: result := 'vi';
-    12: result := 'av';
-    13: result := 'tw';
-    14: result := 'ub';
-    15: result := 'qw';
-    16: result := 'gt';
-    17: result := 'ok';
-    18: result := 'wb';
-  end;
-end;
 {
 function TagOperatorToInt(const a: string): TSIM_OPERATOR;
 begin

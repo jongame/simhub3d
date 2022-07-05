@@ -431,7 +431,7 @@ procedure TMySimBank.Execute;
 var
   exec: boolean;
   t, r: string;
-  i, ec: integer; //errorcount
+  i: integer; //errorcount
   tempSBS: TSIMBANK_Sim;
 begin
   sleep(2500);

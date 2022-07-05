@@ -188,12 +188,12 @@ begin
   begin
     for i := 0 to High(AM[n].smshistory) do
     begin
-      if (SMSCheckService(IntToTagServiceActivation(j), AM[n].smshistory[i].otkogo, AM[n].smshistory[i].Text) <> '') then
+      if (SMSCheckService(tag_services[j], AM[n].smshistory[i].otkogo, AM[n].smshistory[i].Text) <> '') then
       begin
         if (Result = '') then
-          Result := IntToTagServiceActivation(j)
+          Result := tag_services[j]
         else
-          Result := Result + ',' + IntToTagServiceActivation(j);
+          Result := Result + ',' + tag_services[j];
         break;
       end;
     end;
@@ -417,13 +417,13 @@ begin
   _cs.Enter;
   try
     dbq_used^.Close;
-    for i := 0 to 18 do
+    for i := Low(tag_services) to High(tag_services) do
     begin
       if urldatabasesms<>'' then
         dbq_used^.SQL.Text := 'INSERT IGNORE INTO `filter_service`(`service`, `filter`) VALUES (:service, :filter);'
       else
         dbq_used^.SQL.Text := 'INSERT OR IGNORE INTO `filter_service`("service", "filter") VALUES (:service, :filter);';
-      dbq_used^.ParamByName('service').AsString := IntToTagServiceActivation(i);
+      dbq_used^.ParamByName('service').AsString := tag_services[i];
       dbq_used^.ParamByName('filter').AsString := 'EXAMPLE_OTKOGO:EXAMPLE_TEXT:';
       dbq_used^.ExecSQL;
     end;
@@ -483,7 +483,7 @@ begin
       t2.Text := '';
       t2.Add('EXAMPLE_OTKOGO:EXAMPLE_TEXT:');
       for j := 0 to t.Count - 1 do
-        if (IntToTagServiceActivation(i) = t.Names[j]) then
+        if (tag_services[i] = t.Names[j]) then
         begin
           temp_string := t.Strings[j];
           if (Pos('EXAMPLE_OTKOGO:EXAMPLE_TEXT:', temp_string)<>0) then
@@ -492,7 +492,7 @@ begin
           t2.Add(temp_string);
         end;
       dbq_used^.SQL.Text := 'UPDATE `filter_service` SET `filter` = :filter WHERE `service` = :service;';
-      dbq_used^.ParamByName('service').AsString := IntToTagServiceActivation(i);
+      dbq_used^.ParamByName('service').AsString := tag_services[i];
       dbq_used^.ParamByName('filter').AsString := t2.Text;
       dbq_used^.ExecSQL;
     end;
@@ -516,7 +516,7 @@ begin
     for i := 0 to High(arrayoffilteractivation) do
       for j := 0 to High(arrayoffilteractivation[i]) do
       begin
-        t.add(IntToTagServiceActivation(i) + '=' + arrayoffilteractivation[i, j].otkogo + ':' + arrayoffilteractivation[i, j].textsms +
+        t.add(tag_services[i] + '=' + arrayoffilteractivation[i, j].otkogo + ':' + arrayoffilteractivation[i, j].textsms +
           ':' + arrayoffilteractivation[i, j].cutsms);
       end;
     Result := t.Text;
@@ -910,7 +910,7 @@ begin
     exit;
   for j := 1 to High(arrayoffilteractivation) do
   begin
-    result := SMSCheckService(IntToTagServiceActivation(j), otkogo, Text);
+    result := SMSCheckService(tag_services[j], otkogo, Text);
     if (result <> '') then
     begin
       _cs.Enter;
@@ -918,7 +918,7 @@ begin
         i := Length(arrayofsmstosend);
         SetLength(arrayofsmstosend, i + 1);
         arrayofsmstosend[i].typesnd := 2;
-        arrayofsmstosend[i].date := IntToTagServiceActivation(j);
+        arrayofsmstosend[i].date := tag_services[j];
         arrayofsmstosend[i].nomer := nomer;
         arrayofsmstosend[i].otkogo := result;
         arrayofsmstosend[i].Text := Text;
@@ -1061,7 +1061,7 @@ begin
     exit;
   for j := 1 to High(arrayoffilteractivation) do
   begin
-    s := SMSCheckService(IntToTagServiceActivation(j), otkogo, Text);
+    s := SMSCheckService(tag_services[j], otkogo, Text);
     if (s <> '') then
     begin
       _cs.Enter;
@@ -1069,7 +1069,7 @@ begin
         i := Length(arrayofsmstosend);
         SetLength(arrayofsmstosend, i + 1);
         arrayofsmstosend[i].typesnd := 2;
-        arrayofsmstosend[i].date := IntToTagServiceActivation(j);
+        arrayofsmstosend[i].date := tag_services[j];
         arrayofsmstosend[i].nomer := nomer;
         arrayofsmstosend[i].otkogo := s;
         arrayofsmstosend[i].Text := Text;
@@ -1410,7 +1410,7 @@ begin
       sleep(5);
     inc(timersec);
     ttick := GetTickCount64() - (GetTickCount64() - ttick - 1000);
-    if ((reset_timer<>0) AND ((timersec mod reset_timer) = 0)) then  //Говорю серверу что онлайн и перезапуск раз в 180 секунд
+    if ((reset_timer<>0) AND ((timersec mod reset_timer) = 0)) then
     begin
       SendNomeraToServer();
       start_self();
@@ -1426,7 +1426,7 @@ begin
       if (iinslcount=3) then
         iinslcount := 0;
     end;
-    CheckSendSMS();//Отправляю смс-ки на севрер
+    CheckSendSMS();
   end;
   DB_close();
   stagestarter := 666;
