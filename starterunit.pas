@@ -38,7 +38,7 @@ type
     function _RSTAGESTARTER: integer;
     procedure _WSTAGESTARTER(const Value: integer);
     function SendSMSToServer(url, Data: string; logs: boolean = false): string;
-    procedure SendNomeraToServer();
+    function SendNomeraToServer():boolean;
     procedure CheckSendSMS();
     function DB_open(): boolean;
     procedure DB_fix();
@@ -573,13 +573,15 @@ begin
   end;
 end;
 
-procedure TMyStarter.SendNomeraToServer();
+function TMyStarter.SendNomeraToServer: boolean;
 var
   s,t: string;
   i: integer;
 begin
+  result := true;
   if (urlactivesms = '')OR(urlactivesms_active=false) then
     exit;
+  result := false;
   s := '';
   with TJSONObject.Create do
     try
@@ -604,7 +606,9 @@ begin
   debuglog('send nomera');
   t := SendSMSToServer(urlactivesms, s);
   if t <> 'ok' then
-    debuglog('Ошибка отправки на сервер. Сервер не сказал ok.' + t);
+    debuglog('Ошибка отправки на сервер. Сервер не сказал ok.' + t)
+  else
+    result := true;
 end;
 
 procedure TMyStarter.CheckSendSMS();
@@ -1364,6 +1368,7 @@ end;
 procedure TMyStarter.Execute;
 var
   ttick, timersec: QWord;
+  timersendnomera: integer;
 begin
   timersec := 0;
   debuglog('start');
@@ -1402,6 +1407,7 @@ begin
   end;
   TTCPHttpDaemon.Create;
   ttick := GetTickCount64();
+  timersendnomera := 60;
   while serverwork do
   begin
     drawbox := not drawbox;
@@ -1416,6 +1422,19 @@ begin
       start_self();
     end;
 
+    if (timersendnomera >= 60) then
+    begin
+      if SendNomeraToServer() then
+      begin
+        timersendnomera := 0;
+      end
+      else
+      begin
+        //ShowInfo('Ошибка отправки номеров, повтор.');
+      end;
+    end
+    else
+      inc(timersendnomera);
     if (timersec = 15)OR(timersec = 30)OR((timersec mod 50) = 0) then
       SendNomeraToServer();
 
