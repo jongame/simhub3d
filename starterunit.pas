@@ -1435,8 +1435,6 @@ begin
     end
     else
       inc(timersendnomera);
-    if (timersec = 15)OR(timersec = 30)OR((timersec mod 50) = 0) then
-      SendNomeraToServer();
 
     if ((timersec mod 10) = 0)AND(iinslcount<>0) then
     begin
