@@ -415,6 +415,27 @@ begin
           Result := '{"cmd":"done"}';
         end;
       end;
+      '/port/sendatcmd_ponomeru':
+      begin
+        Result := '{"cmd":"not found"}';
+        for i := 0 to High(AM) do
+          if (AM[i].nomer = DecodeURL(d.Values['id'])) then
+          begin
+            if (AM[i].MODEM_STATE = MODEM_AS_USSD) then
+            begin
+              AM[i].Send(mygetDecode(d.Values['cmd'])+#26);
+              AM[i].MODEM_STATE := MODEM_AR_USSD;
+            end
+            else
+            begin
+              if (Pos('*',mygetDecode(d.Values['cmd']))<>0) AND (Pos('#',mygetDecode(d.Values['cmd']))<>0) AND (Pos('ATD',mygetDecode(d.Values['cmd']))=0) AND (Pos('AT+CUSD=',mygetDecode(d.Values['cmd']))=0) then
+                AM[i].SendUSSD(mygetDecode(d.Values['cmd']))
+              else
+                AM[i].Send(mygetDecode(d.Values['cmd']));
+            end;
+            Result := '{"cmd":"done"}';
+          end;
+      end;
       '/port/sendsms':
       begin
         t := mygetDecode(d.Values['id']);
