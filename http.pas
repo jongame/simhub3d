@@ -400,7 +400,18 @@ begin
       begin
         if ((0 <= StrToInt(d.Values['id'])) and (StrToInt(d.Values['id']) <= High(AM))) then
         begin
-          AM[StrToInt(d.Values['id'])].Send(mygetDecode(d.Values['cmd']));
+          if (AM[StrToInt(d.Values['id'])].MODEM_STATE = MODEM_AS_USSD) then
+          begin
+            AM[StrToInt(d.Values['id'])].Send(mygetDecode(d.Values['cmd'])+#26);
+            AM[StrToInt(d.Values['id'])].MODEM_STATE := MODEM_AR_USSD;
+          end
+          else
+          begin
+            if (Pos('*',mygetDecode(d.Values['cmd']))<>0) AND (Pos('#',mygetDecode(d.Values['cmd']))<>0) AND (Pos('ATD',mygetDecode(d.Values['cmd']))=0) AND (Pos('AT+CUSD=',mygetDecode(d.Values['cmd']))=0) then
+              AM[StrToInt(d.Values['id'])].SendUSSD(mygetDecode(d.Values['cmd']))
+            else
+              AM[StrToInt(d.Values['id'])].Send(mygetDecode(d.Values['cmd']));
+          end;
           Result := '{"cmd":"done"}';
         end;
       end;
@@ -982,7 +993,8 @@ begin
     exit;
   AM[i]._cs.Enter;
   try
-    Result := AM[i]._SmsText.Text + #13#10 + AM[i].RecvText+#13#10;//+'['+AM[i].last_response+']';
+    Result := AM[i]._SmsText.Text;
+    //Result := AM[i]._SmsText.Text + #13#10 + AM[i].RecvText+#13#10;//+'['+AM[i].last_response+']';
   finally
     AM[i]._cs.Leave;
   end;

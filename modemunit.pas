@@ -1205,7 +1205,7 @@ begin
     sa := ansistring(s) + ansichar($0D);
     if Serial.InstanceActive then
       Serial.SendString(sa);
-    TextSendAdd(s);
+    TextSendAdd(StringReplace(s,#26,'#',[rfreplaceall]));
   except
     on E: Exception do
       TextSmsAdd('error_send{' + E.ClassName + '}[' + E.Message + ']');
@@ -2021,6 +2021,17 @@ begin
 
 
     end;
+    MODEM_AS_USSD:
+    begin
+      if (_sendtimeout)>=20 then
+      begin
+        TextSmsAdd('Отмена USSD.');
+        Send(#26);
+        MODEM_STATE := MODEM_AR_USSD;
+      end
+      else
+      sleep(250);
+    end;
     MODEM_AS_DELETEMSG:
     begin
       Inc(timeoutindeletesms);
@@ -2091,7 +2102,7 @@ begin
     Inc(_counttimeoutsend);//Увеличиваем счетчик ошибок.
     if (_counttimeoutsend = 3) then
     begin
-      TextSmsAdd('3 ошибки таймаут [' + MODEMSTATE2Str(MODEM_STATE) + '].');
+      TextSmsAdd('3 ошибки таймаут [' + IntToStr(MODEM_STATE) + '].');
       RecvState(MODEM_ERROR);
     end;
   end;
@@ -2392,6 +2403,11 @@ begin
               Send('AT+CMGF=0');
             RecvState(MODEM_MAIN_WHILE);
           end;
+        MODEM_AR_USSD://Выполнение USSD
+          begin
+            RecvState(MODEM_MAIN_WHILE);
+            exit;
+          end;
         MODEM_MAIN_WHILE:
         begin
           if Pos('+CMGL', sOK) <> 0 then
@@ -2424,18 +2440,17 @@ begin
     end
     else///////////////////ЕСЛИ БЕЗ ОК////////////
     begin
-      TextRecvAdd('(' + StringReplace(s, #10, '<CR>', [rfreplaceall]) + ')');
       case MODEM_STATE of
         MODEM_MAIN_WHILE:
         begin
           if (Pos('RING', s) <> 0) then
           begin
-            Delete(RecvText, Pos('RING', RecvText), Pos(#10, RecvText, Pos('RING', RecvText) + 1));
+            Delete(RecvText, Pos('RING', RecvText), Pos(#10, RecvText, Pos('RING', RecvText)) - Pos('RING', RecvText) + 1);
           end;
           if (Pos('+CLIP:', s) <> 0) then
           begin
             OnSms(TimeDMYHM(), 'ЗВОНОК', CLIP2Nomer(s));
-            Delete(RecvText, Pos('RING', RecvText), Pos(#10, RecvText, Pos('+CLIP:', RecvText) + 1));
+            Delete(RecvText, Pos('CLIP', RecvText), Pos(#10, RecvText, Pos('+CLIP:', RecvText)) - Pos('CLIP', RecvText) + 1);
             exit;
           end;
           if (Pos('+CMTI:', s) <> 0) then
@@ -2454,23 +2469,39 @@ begin
             end
             else
               TextSmsAdd('E(+CMTI):' + s);
-            Delete(RecvText, Pos('+CMTI:', RecvText), Pos(#10, RecvText, Pos('+CMTI:', RecvText) + 1));
+            Delete(RecvText, Pos('+CMTI:', RecvText), Pos(#10, RecvText, Pos('+CMTI:', RecvText)) - Pos('+CMTI:', RecvText) + 1);
           end;
           if (Pos('+CUSD: 4', s) <> 0) then
           begin
             TextSmsAdd('Ошибка USSD запроса.');
-            Delete(RecvText, Pos('+CUSD: 4', RecvText), Pos(#10, RecvText, Pos('+CUSD: 4', RecvText) + 1));
+            Delete(RecvText, Pos('+CUSD: 4', RecvText), Pos(#10, RecvText, Pos('+CUSD: 4', RecvText)) -  Pos('+CUSD: 4', RecvText) + 1);
+            exit;
+          end;
+          if Pos('+CUSD: 1', s) <> 0 then
+          begin
+            OnSms(TimeDMYHM(), 'USSD', USSDResponse(s));
+            sec_from_start := 1;//Задерживаем перезагрузку.
+            Delete(RecvText, Pos('+CUSD: 1', RecvText), Pos(#10, RecvText, Pos('+CUSD: 1', RecvText)) - Pos('+CUSD: 1', RecvText) + 1);
+            if Length(RecvText)>=2 then
+              if (RecvText[Length(RecvText)-1] = chr($3E)) and (RecvText[Length(RecvText)] = chr($20)) then
+              begin
+                SetLength(RecvText, Length(RecvText) - 2);
+                TextSmsAdd('Ввод команды:');
+                MODEM_STATE := MODEM_AS_USSD;
+                _sendtimeout := 1;
+              end;
+
             exit;
           end;
           if Pos('+CUSD: 2', s) <> 0 then
           begin
             OnSms(TimeDMYHM(), 'USSD', USSDResponse(s));
-            Delete(RecvText, Pos('+CUSD: 2', RecvText), Pos(#10, RecvText, Pos('+CUSD: 2', RecvText) + 1));
+            Delete(RecvText, Pos('+CUSD: 2', RecvText), Pos(#10, RecvText, Pos('+CUSD: 2', RecvText)) - Pos('+CUSD: 2', RecvText) + 1);
             exit;
           end;
           if (Pos('+CME ERROR', s) <> 0) then
           begin
-            Delete(RecvText, Pos('+CME ERROR', RecvText), Pos(#10, RecvText, Pos('+CME ERROR', RecvText) + 1));
+            Delete(RecvText, Pos('+CME ERROR', RecvText), Pos(#10, RecvText, Pos('+CME ERROR', RecvText)) - Pos('+CME ERROR', RecvText) + 1);
             exit;
           end;
         end;
@@ -2573,6 +2604,7 @@ begin
           end;
         end;//Конец проверка сим
       end;
+      TextRecvAdd('(' + StringReplace(s, #10, '<CR>', [rfreplaceall]) + ')');
     end;
   end;
 end;

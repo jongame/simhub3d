@@ -22,7 +22,7 @@ var
   i, pid: integer;
   daempath: string;
   debugmode: boolean;
-
+  debugsms: boolean;
   MainmemoCS: TCriticalSection;
   mainmemo: TStringList;
 
@@ -35,6 +35,8 @@ var
   SimPort: integer = 0;
 
   tempansi: ansistring;
+
+
 
 implementation
 
@@ -89,6 +91,15 @@ begin
   if ParamStr(1) <> 'ignore' then
     if checkupdate() then
       exit;
+  if ParamStr(1) = 'debug' then
+  begin
+    writeln('Debug sms');
+    debugsms := true;
+  end
+  else
+    debugsms := false;
+  debugmode := true;
+
   if ParamStr(1) = 'exp' then
     while (True) do
     begin
@@ -122,7 +133,7 @@ begin
   timestart := TimeDMYHM();
   Init();
   pid := GetProcessID;
-  debugmode := True;
+
 
   Starter := TMyStarter.Create;
   while serverwork do

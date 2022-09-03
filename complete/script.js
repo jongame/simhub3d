@@ -56,6 +56,8 @@ function refreshfunc() {
 		  }
 		  if (msg["smsmemo"]!=0) {
 			$("#smsmemo").val(msg["smsmemo"]);
+			$("#smsmemo").css("background", "#bce1f8");
+			setTimeout(function() {$("#smsmemo").css("background", "#dce1f8");}, 250);
 		  }		  
 		  if (msg["sim_bank_slot"]!=0) {
 			$("#sim_bank_slot").text(msg["sim_bank_slot"]);
@@ -123,7 +125,7 @@ $(document).keyup(function(e) {
 
 $(document).ready(function() {
 	refreshfunc();
-	refreshtimer = setInterval(refreshfunc, 1000); 
+	refreshtimer = setInterval(refreshfunc, 500); 
 	
 $("#input_at_cmd").on('input', function() {
   refreshfunc();

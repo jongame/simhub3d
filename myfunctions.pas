@@ -80,6 +80,7 @@ function NormalNomer2PDU(t:string):string;
 function utf16tohex(s: string):string;
 procedure DebugLog(s:string);overload;
 procedure DebugLog(s,fs:string);overload;
+procedure DebugLogByte(s,fs:string);
 procedure start_self();
 procedure TextToFile(text, filename: string);
 
@@ -354,6 +355,25 @@ begin
       Append(f);
     end;
     Writeln(f,TimeDMYHMS()+':'+ s);
+  finally
+    CloseFile(f);
+  end;
+end;
+
+procedure DebugLogByte(s, fs: string);
+var
+   f : Textfile;
+begin
+  //exit;
+  AssignFile(f, extractfilepath(paramstr(0))+fs);
+  try
+    if FileExists(extractfilepath(paramstr(0))+fs) = False then
+      Rewrite(f)
+    else
+    begin
+      Append(f);
+    end;
+    Write(f, s);
   finally
     CloseFile(f);
   end;

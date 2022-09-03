@@ -604,7 +604,7 @@ begin
       Free;
     end;
   debuglog('send nomera');
-  t := SendSMSToServer(urlactivesms, s);
+  t := SendSMSToServer(urlactivesms, s, debugsms);
   if t <> 'ok' then
     debuglog('Ошибка отправки на сервер. Сервер не сказал ok.' + t)
   else
@@ -642,7 +642,7 @@ begin
             Free;
           end;
         if (urlactivesms <> '') then
-          if (SendSMSToServer(urlactivesms, postdata) <> 'ok') then
+          if (SendSMSToServer(urlactivesms, postdata, debugsms) <> 'ok') then
             exit; //Отправка не удалась, выходим
       end;
       2:
@@ -658,7 +658,7 @@ begin
             Free;
           end;
         if (urlactivesms <> '') then
-          if (SendSMSToServer(urlactivesms, postdata) <> 'ok') then
+          if (SendSMSToServer(urlactivesms, postdata, debugsms) <> 'ok') then
             exit; //Отправка не удалась, выходим
       end;
     end;
