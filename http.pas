@@ -431,10 +431,13 @@ begin
             end
             else
             begin
-              if (Pos('*',mygetDecode(d.Values['cmd']))<>0) AND (Pos('#',mygetDecode(d.Values['cmd']))<>0) AND (Pos('ATD',mygetDecode(d.Values['cmd']))=0) AND (Pos('AT+CUSD=',mygetDecode(d.Values['cmd']))=0) then
+              if Length(mygetDecode(d.Values['cmd']))=1 then
                 AM[i].SendUSSD(mygetDecode(d.Values['cmd']))
               else
-                AM[i].Send(mygetDecode(d.Values['cmd']));
+                if (Pos('*',mygetDecode(d.Values['cmd']))<>0) AND (Pos('#',mygetDecode(d.Values['cmd']))<>0) AND (Pos('ATD',mygetDecode(d.Values['cmd']))=0) AND (Pos('AT+CUSD=',mygetDecode(d.Values['cmd']))=0) then
+                  AM[i].SendUSSD(mygetDecode(d.Values['cmd']))
+                else
+                  AM[i].Send(mygetDecode(d.Values['cmd']));
             end;
             Result := '{"cmd":"done"}';
           end;
