@@ -45,6 +45,7 @@ type
     procedure DB_close();
     procedure RunIIN();
   public
+    timersec: QWord;
     bindimei, bindimei_sim, urlactivesms_active, newsim_delay: boolean;
     reset_timer: integer;
     simbank_swapig: boolean;
@@ -1367,7 +1368,7 @@ end;
 
 procedure TMyStarter.Execute;
 var
-  ttick, timersec: QWord;
+  ttick: QWord;
   timersendnomera: integer;
 begin
   timersec := 0;

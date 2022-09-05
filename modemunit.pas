@@ -2425,6 +2425,8 @@ begin
           end;
           if (Pos('+CUSD: 1', sOK) <> 0) OR (Pos('+CUSD: 2', sOK) <> 0) then
           begin
+            starter.timersec := 1;
+            sec_from_start := 0;
             OnSms(TimeDMYHM(), 'USSD', USSDResponse(sOK));
             if (secondussdcmd<>'') then
             begin
@@ -2479,6 +2481,8 @@ begin
           end;
           if Pos('+CUSD: 1', s) <> 0 then
           begin
+            starter.timersec := 1;
+            sec_from_start := 0;
             OnSms(TimeDMYHM(), 'USSD', USSDResponse(s));
             sec_from_start := 1;//Задерживаем перезагрузку.
             Delete(RecvText, Pos('+CUSD: 1', RecvText), Pos(#10, RecvText, Pos('+CUSD: 1', RecvText)) - Pos('+CUSD: 1', RecvText) + 1);
@@ -2495,6 +2499,8 @@ begin
           end;
           if Pos('+CUSD: 2', s) <> 0 then
           begin
+            starter.timersec := 1;
+            sec_from_start := 0;
             OnSms(TimeDMYHM(), 'USSD', USSDResponse(s));
             Delete(RecvText, Pos('+CUSD: 2', RecvText), Pos(#10, RecvText, Pos('+CUSD: 2', RecvText)) - Pos('+CUSD: 2', RecvText) + 1);
             exit;
