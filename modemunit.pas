@@ -1937,6 +1937,7 @@ begin
     MODEM_AS_CFUN: SendandState('AT+CFUN?');
     MODEM_AS_CMEE: SendandState('AT+CMEE=1');
     MODEM_AS_CSCS: SendandState('AT+CSCS="GSM"');
+    MODEM_AS_CLIP: SendandState('AT+CLIP=1');
     MODEM_AS_CMGF: SendandState('AT+CMGF=0');
     MODEM_AS_CPIN: SendandState('AT+CPIN?');
     MODEM_AS_ICC:
@@ -2103,8 +2104,10 @@ begin
     Inc(_counttimeoutsend);//Увеличиваем счетчик ошибок.
     if (_counttimeoutsend = 3) then
     begin
-      TextSmsAdd('3 ошибки таймаут [' + IntToStr(MODEM_STATE) + '].');
-      RecvState(MODEM_ERROR);
+      TextSmsAdd('3 ошибки таймаут [' + IntToStr(MODEM_STATE) + '] рестарт.');
+      sleep(5000);
+      PORT_STATE := PORT_RESTART;
+      //RecvState(MODEM_ERROR);
     end;
   end;
 end;
@@ -2217,7 +2220,7 @@ begin
           MODEM_STATE := MODEM_STATE + 1;
           exit;
         end;
-        MODEM_AR_ATE0, MODEM_AR_CMEE, MODEM_AR_CMGF, MODEM_AR_CSCS: //Не фани и Текстовый режим
+        MODEM_AR_ATE0, MODEM_AR_CMEE, MODEM_AR_CMGF, MODEM_AR_CSCS, MODEM_AR_CLIP: //Не фани и Текстовый режим
         begin
           MODEM_STATE := MODEM_STATE + 1;
           exit;
