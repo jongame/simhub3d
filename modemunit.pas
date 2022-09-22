@@ -2310,7 +2310,7 @@ begin
         end;
         MODEM_AR_CPAS://Готов модем?
         begin
-          if (Str2GotovLiModem(sOK) = 0) or (Str2GotovLiModem(sOK) = 1) or (Str2GotovLiModem(sOK) = 2) then
+          if (Str2GotovLiModem(sOK) = 0) or (Str2GotovLiModem(sOK) = 1) or (Str2GotovLiModem(sOK) = 2) or (Str2GotovLiModem(sOK) = 3) then
           begin
             MODEM_STATE := MODEM_STATE + 1;
             exit;
