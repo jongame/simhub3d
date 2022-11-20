@@ -100,7 +100,7 @@ type
     procedure _WLAST_RESPONSE(const Value: string);
   public
     newsim: boolean;
-    secondussdcmd: string;
+    lastussd, secondussdcmd: string;
     _cs: TCriticalSection;
     _lastrecv: QWord;
     ModemModel: TSIMHUB_MODEL;
@@ -1172,6 +1172,7 @@ end;
 
 procedure TMyModem.SendUSSD(s: string);
 begin
+  lastussd := s;
   case ModemModel of
     Q2403:
       Send('AT+CUSD=1,"' + s + '"');
@@ -1850,13 +1851,17 @@ begin
       s := Text;
       Delete(s, 1, Pos(':',s));
       Delete(s, 1, Pos(' ',s));
-      s := Copy(s,1,Pos(' ',s));
+      s := Copy(s,1,Pos(' ',s,Pos(' ',s)+1));
       s := UTF8UpperString(s);
       if Pos(s, starter.iinsl.Strings[i])<>0 then
       begin
         SendUSSD('*660*1#');
         secondussdcmd := GetNumber(Copy(starter.iinsl.Strings[i],1,12));
-      end;
+        break;
+      end
+      else
+      if i=starter.iinsl.Count-1 then
+        ShowSms('SYSTEM', '[' + date + '] Данных ИНН нет. ' + Copy(s,1,Pos(' ',s,Pos(' ',s)+1)));
     end;
   end;
 
@@ -2523,6 +2528,8 @@ begin
           begin
             TextSmsAdd('Ошибка USSD запроса.');
             Delete(RecvText, Pos('+CUSD: 4', RecvText), Pos(#10, RecvText, Pos('+CUSD: 4', RecvText)) -  Pos('+CUSD: 4', RecvText) + 1);
+            sleep(1000);
+            SendUSSD(lastussd);
             exit;
           end;
           if Pos('+CUSD: 1', s) <> 0 then
