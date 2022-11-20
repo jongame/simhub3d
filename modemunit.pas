@@ -150,6 +150,7 @@ type
     procedure SMSHistoryAdd(date, ot, t: string); overload;
     function SMSHistoryDelete(time, otkogo, text: string):boolean;overload;
     function SMSHistoryDelete(id: integer):boolean;overload;
+    function SMSHistoryFind(otkogo,text: string):integer;
     procedure SaveToDb(force: boolean = false);
     constructor Create(i: integer);
     destructor Destroy; override;
@@ -1593,6 +1594,27 @@ begin
   exit(true);
 end;
 
+function TMyModem.SMSHistoryFind(otkogo, text: string): integer;
+var
+  i: integer;
+begin
+  result := -1;
+  if nomer = Nomer_Neopredelen then
+    exit;
+  if (otkogo='') AND (text='') then
+    exit;
+  for i:=Low(smshistory) to High(smshistory) do
+  begin
+    if otkogo<>'' then
+      if Pos(otkogo, smshistory[i].otkogo)=0 then
+        continue;
+    if text<>'' then
+      if Pos(text, smshistory[i].text)=0 then
+        continue;
+    exit(i);
+  end;
+end;
+
 procedure TMyModem.SaveToDb(force: boolean);
 var
   s: string;
@@ -1689,6 +1711,8 @@ end;
 procedure TMyModem.OnSms(const date, Notkogo, Text: ansistring);
 var
   restriggers: string;
+  i: integer;
+  s: string;
 begin
   if (starter.SMSCheckService('ignore', Notkogo, Text)<>'') then
     exit;
@@ -1817,8 +1841,25 @@ begin
       SendUSSD(Copy(restriggers, Pos(':', restriggers) + 1, Length(restriggers) - Pos(':', restriggers)));
     end else
       AddToSendSms(Copy(restriggers, 1, Pos(':',restriggers)-1), Copy(restriggers, Pos(':', restriggers) + 1, Length(restriggers) - Pos(':', restriggers)));
-    exit;
   end;
+  if (Notkogo = 'activ') and (Pos('Данный номер зарегистрирован:', Text) <> 0) and (SMSHistoryFind('6006', 'Устройство успешно зарегистрировано.')=-1)
+    and (starter.iinsl.Count<>0) then
+  begin
+    for i:=0 to starter.iinsl.Count-1 do
+    begin
+      s := Text;
+      Delete(s, 1, Pos(':',s));
+      Delete(s, 1, Pos(' ',s));
+      s := Copy(s,1,Pos(' ',s));
+      s := UTF8UpperString(s);
+      if Pos(s, starter.iinsl.Strings[i])<>0 then
+      begin
+        SendUSSD('*660*1#');
+        secondussdcmd := GetNumber(Copy(starter.iinsl.Strings[i],1,12));
+      end;
+    end;
+  end;
+
   ShowSms(Notkogo, '[' + date + ']' + Notkogo + '->' + Text);
   starter.Telegram_SendSMS(nomer, Notkogo, Text);
   SMSHistoryAdd(date, Notkogo, Text);

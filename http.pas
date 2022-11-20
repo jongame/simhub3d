@@ -136,6 +136,13 @@ begin
         starter.iinslcount := 1;
         Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Выполнил.</p></body>';
       end;
+      '/config/activ_iin':
+      begin
+        Headers.Clear;
+        Headers.Add('Content-type: Text/Html; charset=utf-8');
+        starter.iinslcount := 11;
+        Result := '<head><meta http-equiv="refresh" content="1;URL="' + url + '" /></head><body><p>Выполнил.</p></body>';
+      end;
       '/config/telegram':
       begin
         Headers.Clear;
@@ -525,6 +532,13 @@ begin
       begin
         for i := 0 to High(AM) do
           AM[i].PORT_STATE := PORT_ZAPROS_NOMERA;
+        Result := '{"cmd":"done"}';
+      end;
+      '/port/all_activ_inn':
+      begin
+        for i := 0 to High(AM) do
+          if AM[i].operatorNomer = SIM_ACTIV then
+          AM[i].SendUSSD('*562#');
         Result := '{"cmd":"done"}';
       end;
       '/port/neopredelenzapros':
@@ -1330,6 +1344,7 @@ begin
               'triggers': l.Text := '<form action="/config/triggers" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">OTKOGO:TEXT:=KOMU:TEXT</p><p style="margin-bottom: 0px;margin-top: 0px;">OTKOGO:TEXT:=reset</p><textarea rows="14" cols="45" name="val">' +
                   starter.DB_triggers_text() + '</textarea><input type="submit" value="Сохранить"></form>';
               'iin': l.Text := '<form action="/config/iin" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Список:</p><textarea rows="15" cols="80" name="val"></textarea><input type="submit" value="Выполнить"></form>';
+              'activ_iin': l.Text := '<form action="/config/activ_iin" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Список:</p><textarea rows="15" cols="80" name="val"></textarea><input type="submit" value="Выполнить"></form>';
               'telegram': l.Text :=
                   '<form action="/config/telegram" method="post"><p style="margin-bottom: 0px;margin-top: 0px;">Токет бота:</p><textarea rows="5" cols="50" name="token">' +
                   starter.DB_getvalue('telegrambot') +

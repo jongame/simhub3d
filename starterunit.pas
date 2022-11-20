@@ -25,6 +25,7 @@ type
     dbc_sms: TZConnection;
     dbq_used: ^TZQuery;
     counteractivationid: integer;
+    Telegram_offset: integer;
     lastcheckhash: string;
     arrayofsmstosend: TArraysmstosend;
     //arrayofactivation: TArrayofACTIVATION_OBJECT;
@@ -57,6 +58,7 @@ type
     iinslcount: integer;
     property stagestarter: integer read _RSTAGESTARTER write _WSTAGESTARTER default 0;
     procedure SwapThread(a, b: integer);
+    function Telegram_getupdates():string;
     procedure Telegram_SendSMS(const sl,n, t: string);
     procedure Telegram_Send(const telega, Text: string);
     function AddToSendSms2service(nomer, otkogo, Text, date: string):string;
@@ -777,20 +779,35 @@ begin
 end;
 
 procedure TMyStarter.DB_fix();
+const
+  ar_ignore_sms: array[0..1] of string = (
+    '`otkogo`="SYSTEM" AND `text` LIKE "Ваш номер %"',
+    '`otkogo`="7006" AND `text` LIKE "Регистрация номера НЕВОЗМОЖНА!%"'
+    );
+var
+  i:integer;
 begin
   _cs.Enter;
   try
-    dbq_used^.Close;
-    dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE `otkogo`="SYSTEM" AND `text` LIKE "Ваш номер %";';
-    dbq_used^.ExecSQL;
-    if (urldatabasesms='') then
-    begin
-      dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE id NOT IN (SELECT id FROM `sms` ORDER BY id DESC LIMIT 500000);';
-      dbq_used^.ExecSQL;
-      dbq_used^.SQL.Text := 'VACUUM;';
-      dbq_used^.ExecSQL;
+    try
+      dbq_used^.Close;
+      for i:=Low(ar_ignore_sms) to High(ar_ignore_sms) do
+      begin
+        dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE '+StringReplace(ar_ignore_sms[i],'"','''',[rfreplaceall])+';';
+        dbq_used^.ExecSQL;
+      end;
+      if (urldatabasesms='') then
+      begin
+        dbq_used^.SQL.Text := 'DELETE FROM `sms` WHERE id NOT IN (SELECT id FROM `sms` ORDER BY id DESC LIMIT 500000);';
+        dbq_used^.ExecSQL;
+        dbq_used^.SQL.Text := 'VACUUM;';
+        dbq_used^.ExecSQL;
+      end;
+      dbq_used^.Close;
+    except
+      on E: Exception do
+        debuglog('error_DB_fix{' + E.ClassName + '}[' + E.Message + ']['+dbq_used^.SQL.Text+']');
     end;
-    dbq_used^.Close;
   finally
     _cs.Leave;
   end;
@@ -821,6 +838,76 @@ begin
     _cs.Leave;
   end;
 end;
+
+function TMyStarter.Telegram_getupdates: string;
+{$IFDEF UNIX}
+var
+  M: TMemoryStream;
+  res: string;
+  buf: array[1..2048] of byte;
+  Count: integer;
+begin
+  M := TMemoryStream.Create;
+  with TProcess.Create(nil) do
+  begin
+    Options := [poUsePipes, poNoConsole];
+    if (Telegram_offset=0) then
+      Commandline := 'wget -q -O - https://api.telegram.org/'+telegram_bot_id+'/getUpdates'
+    else
+      Commandline := 'wget -q -O - https://api.telegram.org/'+telegram_bot_id+'/getUpdates?offset='+IntToStr(Telegram_offset);
+    Execute;
+    res := '';
+    repeat
+      Count := Output.Read(buf, 2048);
+      for i := 1 to Count do
+        res := res + chr(buf[i]);
+    until Count = 0;
+    Free;
+  end;
+  result := res;
+end;
+{$ELSE}
+var
+  M: TMemoryStream;
+  s: string;
+  HTTP: THTTPSend;
+  res: boolean;
+begin
+  result := '';
+  M := TMemoryStream.Create;
+  try
+    HTTP := THTTPSend.Create;
+    try
+      //WriteStrToStream(HTTP.Document, 'chat_id=' + telega + '&text=' + EncodeURLElement(Text) + '&parse_mode=HTML');      //-472826551
+      HTTP.MimeType := 'application/x-www-form-urlencoded';
+      try
+        if (Telegram_offset=0) then
+          res := HTTP.HTTPMethod('GET', 'wget -q -O - https://api.telegram.org/'+telegram_bot_id+'/getUpdates')
+        else
+          res := HTTP.HTTPMethod('GET', 'wget -q -O - https://api.telegram.org/'+telegram_bot_id+'/getUpdates'+IntToStr(Telegram_offset));
+      except
+        on E : Exception do
+          debuglog('TELEGA ERROR:'+E.ClassName+' : '+E.Message);
+      end;
+      if res then
+      begin
+        M.CopyFrom(HTTP.Document, 0);
+        result := M.ReadAnsiString();
+      end
+      else
+      begin
+        debuglog('ERROR1: ' + IntToStr(HTTP.ResultCode) + ' : ' + HTTP.ResultString);
+        debuglog('ERROR1: ' + IntToStr(HTTP.Sock.LastError) + ' : ' + IntToStr(HTTP.Sock.LastError) + ' : ' + HTTP.Sock.LastErrorDesc +
+          ':' + HTTP.Sock.SocksIP);
+      end;
+    finally
+      HTTP.Free;
+    end;
+  finally
+    M.Free;
+  end;
+end;
+{$ENDIF}
 
 procedure TMyStarter.Telegram_SendSMS(const sl, n, t: string);
 var
@@ -1271,24 +1358,47 @@ var
   s: string;
 begin
   ShowInfo('RUNIIN '+IntToStr(iinslcount));
+  s := '';
   for i:=0 to High(AM) do
   begin
-    s := iinsl.Strings[i];
+
+    if (iinslcount<>11) then
+      s := iinsl.Strings[i]
+    else
+    begin
+      if FileExists(extractfilepath(paramstr(0))+'activ_inn.txt') = False then
+      begin
+        ShowInfo('Ошибка, нету файла '+extractfilepath(paramstr(0))+'activ_inn.txt');
+        exit;
+      end;
+      iinsl.LoadFromFile('activ_inn.txt');
+    end;
+
     case AM[i].OperatorNomer of
       SIM_ACTIV:
         begin
-          if (iinslcount=1) then
+          case iinslcount of
+            1:
             begin
               s := Copy(s, 1, Pos(' ',s,Pos(' ',s)+1)-1);
               s := StringReplace(s,';',' ',[rfreplaceall]);
               AM[i].AddToSendSms('6007', s);
             end;
-          if (iinslcount=2) then
+            2:
             begin
               s := Copy(s, 1, Pos(' ',s,Pos(' ',s)+1)-1);
               s := StringReplace(s,';',' ',[rfreplaceall]);
               AM[i].AddToSendSms('7006', s);
             end;
+            11:
+            begin
+              if (AM[i].SMSHistoryFind('6006', 'Устройство успешно зарегистрировано.')=-1) AND
+                (AM[i].SMSHistoryFind('6006', 'Введенный ИИН не совпадает с регистрационными данными номера.')=-1) AND
+                (AM[i].SMSHistoryFind('6006', 'Регистрация устройства лицам младше 14 лет разрешена только на ИИН')=-1) AND
+                (AM[i].SMSHistoryFind('6006', 'Введенный номер паспорта не совпадает с регистрационными данными номера.')=-1) then
+                AM[i].SendUSSD('*562#');
+            end;
+          end;
         end;
       SIM_ALTEL:
         begin
@@ -1351,6 +1461,7 @@ begin
   iinsl := TStringList.Create;
   iinslcount := 0;
   counteractivationid := 1;
+  Telegram_offset := 0;
   lastcheckhash := '';
   telegram_bot_id := '';
   drawbox := False;
@@ -1390,7 +1501,6 @@ begin
   newsim_delay := DB_getvalue('newsim_delay')='true';
   simbank_swapig := DB_getvalue('simbank_swapig')='true';
   reset_timer := StrToInt(DB_getvalue('reset_timer'));
-
   DB_fix();
   StartALL();
   DB_servicefilter_load();
@@ -1439,9 +1549,11 @@ begin
 
     if ((timersec mod 10) = 0)AND(iinslcount<>0) then
     begin
+      if (reset_timer<>0) then
+        reset_timer := reset_timer + 300;
       RunIIN();
       inc(iinslcount);
-      if (iinslcount=3) then
+      if (iinslcount=3)OR(iinslcount=12) then
         iinslcount := 0;
     end;
     CheckSendSMS();

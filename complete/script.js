@@ -494,6 +494,16 @@ $("#btn_allzapros").click(function() {
       url:"/port/allzapros",
       datatype:"json"
 	});
+	
+});
+$("#btn_activ_inn").click(function() {
+	$(this).prop( "disabled", true );
+	setTimeout(function() {$("#btn_activ_inn").prop( "disabled", false );}, 1500);
+	$.ajax({
+      type:"post",
+      url:"/config/activ_iin",
+      datatype:"json"
+	});
 });
 $("#btn_all_reset").click(function() {
 	$(this).prop( "disabled", true );
