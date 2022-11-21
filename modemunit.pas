@@ -50,6 +50,7 @@ type
     _PORT_STATE: TPORT_STATE;
     _MODEM_STATE: byte;
     _sendtimeout, _counttimeoutsend, timeoutinsendsms: integer;//таймаут на оправку команды, количество попыток
+    _ussdcounttry: integer;
     sendsms: array of MySmsSend;//Отправка смс
     resultcode_sendsms: integer;
     timeoutindeletesms: integer; //Таймаут на удаление смс
@@ -70,6 +71,7 @@ type
     function ParseCFUN(s: string): integer;
     function ParseError(s:string):integer;
     function ParseError2str(s:string):string;
+    procedure _SendUSSD(s: string);
     function _RPORT_STATE: TPORT_STATE;
     procedure _WPORT_STATE(const Value: TPORT_STATE);
     function _RMODEM_STATE: byte;
@@ -707,6 +709,22 @@ begin
   end;
 end;
 
+procedure TMyModem._SendUSSD(s: string);
+begin
+  case ModemModel of
+    Q2403:
+      Send('AT+CUSD=1,"' + s + '"');
+    TC35i:
+      Send('ATD' + s + ';');
+    MC55:
+      Send('ATD' + s + ';');
+    M35:
+      Send('AT+CUSD=1,"' + s + '"'); //Send('ATD' + s + ';');
+    else
+      Send('AT+CUSD=1,"' + s + '"');
+  end;
+end;
+
 procedure TMyModem.TextSendAdd(s: string);
 begin
   _cs.Enter;
@@ -1047,6 +1065,7 @@ begin
   url := '';
   _sendtimeout := 0;
   _counttimeoutsend := 0;
+  _ussdcounttry := 0;
   timeoutinsendsms := 0;
   resultcode_sendsms := 0;
   nomer := data_neopredelen;
@@ -1173,18 +1192,8 @@ end;
 procedure TMyModem.SendUSSD(s: string);
 begin
   lastussd := s;
-  case ModemModel of
-    Q2403:
-      Send('AT+CUSD=1,"' + s + '"');
-    TC35i:
-      Send('ATD' + s + ';');
-    MC55:
-      Send('ATD' + s + ';');
-    M35:
-      Send('AT+CUSD=1,"' + s + '"'); //Send('ATD' + s + ';');
-    else
-      Send('AT+CUSD=1,"' + s + '"');
-  end;
+  _ussdcounttry := 0;
+  _SendUSSD(s);
 end;
 
 procedure TMyModem.SMSHistoryLoadorClear();
@@ -2526,10 +2535,18 @@ begin
           end;
           if (Pos('+CUSD: 4', s) <> 0) then
           begin
-            TextSmsAdd('Ошибка USSD запроса.');
+
             Delete(RecvText, Pos('+CUSD: 4', RecvText), Pos(#10, RecvText, Pos('+CUSD: 4', RecvText)) -  Pos('+CUSD: 4', RecvText) + 1);
-            sleep(1000);
-            SendUSSD(lastussd);
+
+            if (_ussdcounttry<3) then
+            begin
+              TextSmsAdd('Ошибка USSD запроса. Повтор.');
+              sleep(1000);
+              inc(_ussdcounttry);
+              _SendUSSD(lastussd);
+            end
+            else
+              TextSmsAdd('Ошибка USSD запроса.');
             exit;
           end;
           if Pos('+CUSD: 1', s) <> 0 then
