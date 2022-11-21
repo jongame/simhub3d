@@ -1354,8 +1354,8 @@ end;
 
 procedure TMyStarter.RunIIN();
 var
-  i: integer;
-  s: string;
+  i,j,k: integer;
+  s, s2: string;
 begin
   ShowInfo('RUNIIN '+IntToStr(iinslcount));
   s := '';
@@ -1397,7 +1397,30 @@ begin
                 (AM[i].SMSHistoryFind('6006', 'Регистрация устройства лицам младше 14 лет разрешена только на ИИН')=-1) AND
                 (AM[i].SMSHistoryFind('6006', 'ВНИМАНИЕ! Абонентский номер, на который Вы пытаетесь')=-1) AND
                 (AM[i].SMSHistoryFind('6006', 'Введенный номер паспорта не совпадает с регистрационными данными номера.')=-1) then
-                AM[i].SendUSSD('*562#');
+                begin
+                  j := AM[i].SMSHistoryFind('activ', 'Данный номер зарегистрирован:');
+                  if j<>-1 then
+                  begin
+                    s2 := AM[i].smshistory[j].Text;
+                    Delete(s2, 1, Pos(':',s2));
+                    Delete(s2, 1, Pos(' ',s2));
+                    s2 := Copy(s2,1,Pos(' ',s2,Pos(' ',s2)+1));
+                    s2 := UTF8UpperString(s2);
+                    for k:=0 to iinsl.Count-1 do
+                    begin
+                      if Pos(s2, iinsl.Strings[k])<>0 then
+                      begin
+                        AM[i].SendUSSD('*660*1#',GetNumber(Copy(iinsl.Strings[k],1,12)));
+                        break;
+                      end
+                      else
+                      if k=iinsl.Count-1 then
+                        MainMemoWrite('Данных ИНН нет. ' + Copy(s2,1,Pos(' ',s2,Pos(' ',s2)+1)), i);
+                    end;
+                  end
+                  else
+                    AM[i].SendUSSD('*562#');
+                end;
             end;
           end;
         end;
@@ -1411,8 +1434,7 @@ begin
             end;
           if (iinslcount=2) then
             begin
-              AM[i].SendUSSD('*6914*1#');
-              AM[i].secondussdcmd := Copy(s, 1, Pos(';',s)-1);
+              AM[i].SendUSSD('*6914*1#', Copy(s, 1, Pos(';',s)-1));
             end;
         end;
       SIM_TELE2:
@@ -1425,8 +1447,7 @@ begin
             end;
           if (iinslcount=2) then
             begin
-              AM[i].SendUSSD('*6914*1*1#');
-              AM[i].secondussdcmd := Copy(s, 1, Pos(';',s)-1);
+              AM[i].SendUSSD('*6914*1*1#', Copy(s, 1, Pos(';',s)-1));
             end;
         end;
       SIM_BEELINE_KZ:
@@ -1437,8 +1458,7 @@ begin
             end;
           if (iinslcount=2) then
             begin
-              AM[i].SendUSSD('*692#');
-              AM[i].secondussdcmd := Copy(s, 1, Pos(';',s)-1);
+              AM[i].SendUSSD('*692#', Copy(s, 1, Pos(';',s)-1));
             end;
         end;
     end;

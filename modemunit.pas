@@ -58,7 +58,7 @@ type
     deletemsg: array of integer;
     //_servicearray: string;
     //_recvs,_recvsOK:string;
-    tempsendsms: string;
+    _lastussd, tempsendsms, _secondussdcmd: string;
     procedure tickSendsms();
     procedure MyStart();
     procedure TextSendAdd(s: string);
@@ -102,7 +102,6 @@ type
     procedure _WLAST_RESPONSE(const Value: string);
   public
     newsim: boolean;
-    lastussd, secondussdcmd: string;
     _cs: TCriticalSection;
     _lastrecv: QWord;
     ModemModel: TSIMHUB_MODEL;
@@ -144,7 +143,7 @@ type
     procedure AddToSendSms2(t: string);
     function SendSms_timeout(komu, text: string):integer;
     procedure Send(s: string);
-    procedure SendUSSD(s: string);
+    procedure SendUSSD(s: string; secondcmd: string = '');
     procedure OnSms(const date, Notkogo, Text: ansistring);
     procedure SMSHistoryLoadorClear();
     procedure SMSHistoryAdd(t: string); overload;
@@ -1047,7 +1046,7 @@ end;
 constructor TMyModem.Create(i: integer);
 begin
   inherited Create(False);
-  secondussdcmd := '';
+  _secondussdcmd := '';
   _cs := TCriticalSection.Create();
   idthread := i;
   __ticktack := GetTickCount64();
@@ -1189,10 +1188,11 @@ begin
   result := resultcode_sendsms;
 end;
 
-procedure TMyModem.SendUSSD(s: string);
+procedure TMyModem.SendUSSD(s: string; secondcmd: string);
 begin
-  lastussd := s;
+  _lastussd := s;
   _ussdcounttry := 0;
+  _secondussdcmd := secondcmd;
   _SendUSSD(s);
 end;
 
@@ -1855,17 +1855,16 @@ begin
   if (Notkogo = 'activ') and (Pos('Данный номер зарегистрирован:', Text) <> 0) and (SMSHistoryFind('6006', 'Устройство успешно зарегистрировано.')=-1)
     and (starter.iinsl.Count<>0) then
   begin
+    s := Text;
+    Delete(s, 1, Pos(':',s));
+    Delete(s, 1, Pos(' ',s));
+    s := Copy(s,1,Pos(' ',s,Pos(' ',s)+1));
+    s := UTF8UpperString(s);
     for i:=0 to starter.iinsl.Count-1 do
     begin
-      s := Text;
-      Delete(s, 1, Pos(':',s));
-      Delete(s, 1, Pos(' ',s));
-      s := Copy(s,1,Pos(' ',s,Pos(' ',s)+1));
-      s := UTF8UpperString(s);
       if Pos(s, starter.iinsl.Strings[i])<>0 then
       begin
-        SendUSSD('*660*1#');
-        secondussdcmd := GetNumber(Copy(starter.iinsl.Strings[i],1,12));
+        SendUSSD('*660*1#',GetNumber(Copy(starter.iinsl.Strings[i],1,12)));
         break;
       end
       else
@@ -2488,10 +2487,9 @@ begin
             starter.timersec := 1;
             sec_from_start := 0;
             OnSms(TimeDMYHM(), 'USSD', USSDResponse(sOK));
-            if (secondussdcmd<>'') then
+            if (_secondussdcmd<>'') then
             begin
-              SendUSSD(secondussdcmd);
-              secondussdcmd := '';
+              SendUSSD(_secondussdcmd);
             end;
             exit;
           end;
@@ -2543,7 +2541,7 @@ begin
               TextSmsAdd('Ошибка USSD запроса. Повтор.');
               sleep(1000);
               inc(_ussdcounttry);
-              _SendUSSD(lastussd);
+              _SendUSSD(_lastussd);
             end
             else
               TextSmsAdd('Ошибка USSD запроса.');
