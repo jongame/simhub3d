@@ -1835,14 +1835,14 @@ begin
   restriggers := starter.SMSCheckTriggers(Notkogo, text);
   if (restriggers<>'') then
   begin
-    ShowSms('', 'Trigger[' + date + ']' + Notkogo + '->' + Text);
+    ShowSms('', 'Trigger['+restriggers+'][' + date + ']' + Notkogo + '->' + Text);
     if (restriggers='reset') then
     begin
       Send('AT+CFUN=1,1');
       sleep(2000);
       PORT_STATE := PORT_RESTART;
-    end;
-    if (Copy(restriggers, 1, Pos(':',restriggers)-1)='CALL') then
+    end
+    else if (Copy(restriggers, 1, Pos(':',restriggers)-1)='CALL') then
     begin
       Send('ATD'+Copy(restriggers, Pos(':', restriggers) + 1, Length(restriggers) - Pos(':', restriggers))+';');
     end

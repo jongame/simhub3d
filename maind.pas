@@ -288,7 +288,7 @@ begin
     if i <> -1 then
     begin
       if (AM[i].nomer <> Nomer_Neopredelen) then
-        MainMemo.Add(TimeHM + ':' + '[' + AM[i].nomer + '] ' + a)
+        MainMemo.Add(TimeHM + ':' + '[' + AM[i].nomer + '][' + IntToStr(AM[i].idthread + 1) + '] ' + a)
       else
         MainMemo.Add(TimeHM + ':' + '[' + AM[i].nomer + '][' + IntToStr(AM[i].idthread + 1) + '] ' + a);
       if debugmode then
