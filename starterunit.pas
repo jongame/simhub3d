@@ -578,7 +578,7 @@ end;
 
 function TMyStarter.SendNomeraToServer: boolean;
 var
-  s,t: string;
+  s,t,ds: string;
   i: integer;
 begin
   result := true;
@@ -586,6 +586,7 @@ begin
     exit;
   result := false;
   s := '';
+  ds := '';
   with TJSONObject.Create do
     try
       Strings['servername'] := servername;
@@ -594,11 +595,30 @@ begin
       for i := 0 to High(AM) do
       begin
         if (AM[i].MODEM_STATE <> MODEM_MAIN_WHILE) or (AM[i].nomer = Nomer_Neopredelen) or (AM[i].nomer = data_neopredelen) or (AM[i].operatorNomer = SIM_UNKNOWN) then
+        begin
+          if debugsms then
+          begin
+            if (AM[i].MODEM_STATE <> MODEM_MAIN_WHILE) then
+              ds := ds + '['+IntToStr(i)+'] MODEM_STATE,';
+            if (AM[i].operatorNomer = SIM_UNKNOWN) then
+              ds := ds + '['+IntToStr(i)+'] SIM_UNKNOWN,';
+            if (AM[i].nomer = Nomer_Neopredelen) or (AM[i].nomer = data_neopredelen) then
+              ds := ds + '['+IntToStr(i)+'] NOMER,';
+          end;
           continue;
+        end;
         if (AM[i].statesim <> SIM_HOME_NETWORK) AND (AM[i].statesim <> SIM_ROAMING) then
+        begin
+          if debugsms then
+            ds := ds + '['+IntToStr(i)+'] state sim,';
           continue;
+        end;
         if (AM[i].newsim) then
+        begin
+          if debugsms then
+            ds := ds + '['+IntToStr(i)+'] new sim,';
           continue;
+        end;
         t := SMSCheckAllService(i);
         Arrays[AM[i].nomer] := CreateJSONArray([operator_names_to_activate[AM[i].operatorNomer],t,i+1]);
       end;
@@ -606,7 +626,7 @@ begin
     finally
       Free;
     end;
-  debuglog('send nomera');
+  debuglog('send nomera' + ds);
   t := SendSMSToServer(urlactivesms, s, debugsms);
   if t <> 'ok' then
     debuglog('Ошибка отправки на сервер. Сервер не сказал ok.' + t)
@@ -1539,7 +1559,7 @@ begin
   end;
   TTCPHttpDaemon.Create;
   ttick := GetTickCount64();
-  timersendnomera := 60;
+  timersendnomera := 55;
   while serverwork do
   begin
     drawbox := not drawbox;

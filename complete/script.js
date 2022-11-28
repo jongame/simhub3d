@@ -377,6 +377,22 @@ $("#btn_at_send").click(function() {
 	});
 });
 
+$("#btn_system_ussd_send").click(function() {
+	$(this).prop( "disabled", true );
+	setTimeout(function() {$("#btn_system_ussd_send").prop( "disabled", false );}, 250);
+	$.ajax({
+      type:"post",
+      url:"port/sendussdcmd",
+      data:{"id":selectport,"cmd":$("#input_at_cmd").val()},
+      datatype:"json",
+      success:function(msg)
+        {
+          if (msg["cmd"]=="done") {
+            }
+        }
+	});
+});
+
 $("#btn_send_sms").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_send_sms").prop( "disabled", false );}, 250);

@@ -82,6 +82,7 @@ procedure DebugLog(s:string);overload;
 procedure DebugLog(s,fs:string);overload;
 procedure DebugLogByte(s,fs:string);
 procedure start_self();
+procedure reboot();
 procedure TextToFile(text, filename: string);
 
 implementation
@@ -385,6 +386,15 @@ begin
 
   {$ELSE}
   ShellExecute(0,nil, PChar('SIMHUB3D.exe'),nil,nil,1)
+  {$ENDIF}
+end;
+
+procedure reboot;
+begin
+  {$IFDEF UNIX}
+
+  {$ELSE}
+  ShellExecute(0, nil,'shutdown',' /r /t 0','', SW_SHOWNORMAL);
   {$ENDIF}
 end;
 

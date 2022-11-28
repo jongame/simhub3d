@@ -425,6 +425,10 @@ begin
           Result := '{"cmd":"done"}';
         end;
       end;
+      '/port/sendussdcmd':
+      begin
+
+      end;
       '/port/sendatcmd_ponomeru':
       begin
         Result := '{"cmd":"not found"}';

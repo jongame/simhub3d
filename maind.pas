@@ -19,7 +19,7 @@ const
 
 var
   timestart: string;
-  i, pid: integer;
+  i: integer;
   daempath: string;
   debugmode: boolean;
   debugsms: boolean;
@@ -81,6 +81,8 @@ end;
 procedure dMain();
 var
   Text, exp, res: string;
+  Mutex: THandle;
+  i: integer;
 begin
   writeln('v', version);
   if FileExists(extractfilepath(paramstr(0))+'upd.bat') then
@@ -128,12 +130,27 @@ begin
 
     end;
 
-
   CloseAnother();
+  i := 5;
+  while (true) do
+  begin
+    Mutex:=CreateMutex(nil,True,'SIMHUB3DAEMON');
+    if GetLastError=0 then
+      break
+    else
+      writeln('error close');
+
+    if (i=0) then
+    begin
+      writeln('Reboot after 15 sec');
+      sleep(15000);
+      reboot();
+    end;
+    dec(i);
+    sleep(1000);
+  end;
   timestart := TimeDMYHM();
   Init();
-  pid := GetProcessID;
-
 
   Starter := TMyStarter.Create;
   while serverwork do
@@ -145,6 +162,7 @@ begin
     AM[i].Terminate;
   sleep(100);
   Deinit();
+  ReleaseMutex(Mutex);
 end;
 
 function checkupdate():boolean;
