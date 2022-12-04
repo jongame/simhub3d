@@ -582,7 +582,7 @@ var
   i: integer;
 begin
   result := true;
-  if (urlactivesms = '')OR(urlactivesms_active=false) then
+  if (urlactivesms = '') then
     exit;
   result := false;
   s := '';
@@ -1570,23 +1570,25 @@ begin
     ttick := GetTickCount64() - (GetTickCount64() - ttick - 1000);
     if ((reset_timer<>0) AND ((timersec mod reset_timer) = 0)) then
     begin
-      SendNomeraToServer();
+      if urlactivesms_active then
+        SendNomeraToServer();
       start_self();
     end;
 
-    if (timersendnomera >= 60) then
-    begin
-      if SendNomeraToServer() then
+    if urlactivesms_active then
+      if (timersendnomera >= 60) then
       begin
-        timersendnomera := 0;
+        if SendNomeraToServer() then
+        begin
+          timersendnomera := 0;
+        end
+        else
+        begin
+          //ShowInfo('Ошибка отправки номеров, повтор.');
+        end;
       end
       else
-      begin
-        //ShowInfo('Ошибка отправки номеров, повтор.');
-      end;
-    end
-    else
-      inc(timersendnomera);
+        inc(timersendnomera);
 
     if ((timersec mod 10) = 0)AND(iinslcount<>0) then
     begin
