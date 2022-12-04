@@ -350,7 +350,6 @@ begin
   except
     on E: Exception do
     begin
-      MainMemoWrite('SB rd:' + E.ClassName + ':' + E.Message + ' ' + IntToStr(tempsize));
       debuglog('SB rd:' + E.ClassName + ':' + E.Message + ' ' + IntToStr(tempsize));
     end;
   end;

@@ -28,8 +28,7 @@ type
     Telegram_offset: integer;
     lastcheckhash: string;
     arrayofsmstosend: TArraysmstosend;
-    //arrayofactivation: TArrayofACTIVATION_OBJECT;
-    arrayoffilteractivation: array[0..63] of TArrayofMyServiceSms;
+    arrayoffilteractivation: array[0..COUNT_SERVICES] of TArrayofMyServiceSms;
     arraytelegramclients: array of MyTelegramCLient;
     arrayoftriggers: array of MyTrigger;
     _cs: TCriticalSection;
@@ -60,7 +59,6 @@ type
     function Telegram_getupdates():string;
     procedure Telegram_SendSMS(const sl,n, t: string);
     procedure Telegram_Send(const telega, Text: string);
-    function AddToSendSms2service(nomer, otkogo, Text, date: string):string;
     procedure AddToSendSms(nomer, otkogo, Text, date: string);
     procedure AddToActivateNomer(nomer, opera, state: string);
     procedure SMSDeleteService(const ids, service: string);
@@ -581,6 +579,7 @@ var
   s,t,ds: string;
   i: integer;
 begin
+  debuglog('try send nomera' + ds);
   result := true;
   if (urlactivesms = '') then
     exit;
@@ -1011,49 +1010,6 @@ begin
   end;
 end;
 {$ENDIF}
-
-function TMyStarter.AddToSendSms2service(nomer, otkogo, Text, date: string
-  ): string;
-var
-  j: integer;
-begin
-  result := '';
-  if urlactivesms = '' then
-    exit;
-  for j := 1 to High(arrayoffilteractivation) do
-  begin
-    result := SMSCheckService(tag_services[j], otkogo, Text);
-    if (result <> '') then
-    begin
-      _cs.Enter;
-      try
-        i := Length(arrayofsmstosend);
-        SetLength(arrayofsmstosend, i + 1);
-        arrayofsmstosend[i].typesnd := 2;
-        arrayofsmstosend[i].date := tag_services[j];
-        arrayofsmstosend[i].nomer := nomer;
-        arrayofsmstosend[i].otkogo := result;
-        arrayofsmstosend[i].Text := Text;
-      finally
-        _cs.Leave;
-      end;
-      break;
-    end;
-  end;
-
-  _cs.Enter;
-  try
-    i := Length(arrayofsmstosend);
-    SetLength(arrayofsmstosend, i + 1);
-    arrayofsmstosend[i].typesnd := 1;
-    arrayofsmstosend[i].nomer := nomer;
-    arrayofsmstosend[i].otkogo := otkogo;
-    arrayofsmstosend[i].Text := Text;
-    arrayofsmstosend[i].date := date;
-  finally
-    _cs.Leave;
-  end;
-end;
 
 function TMyStarter.DB_getvalue(key: string): string;
 begin

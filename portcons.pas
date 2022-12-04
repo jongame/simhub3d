@@ -237,7 +237,9 @@ const
   operator_names_to_activate: array[TSIM_OPERATOR] of string = ('Неизвестно', 'mts', 'beeline', 'megafon', 'tele2', 'kcell', 'altel', 'astelit',
     'life', 'activ', 'kyivstar', 'mts_ukr', 'umc_ukr', 'yezzz', 'mtsby', 'velcom', 'beeline_kz');
 
-  tag_services: array[0..19] of string = ('ignore','aa','fb','vk','ma','ya','go','ig','sn','tg','wa','vi','av','tw','ub','qw','gt','ok','wb','wx');
+  COUNT_SERVICES = 19;
+
+  tag_services: array[0..COUNT_SERVICES] of string = ('ignore','aa','fb','vk','ma','ya','go','ig','sn','tg','wa','vi','av','tw','ub','qw','gt','ok','wb','wx');
 
   Nomer_Neopredelen = 'Не_Определен';
   data_neopredelen = 'Не_Загружено';
