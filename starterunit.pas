@@ -39,7 +39,6 @@ type
     function _RSTAGESTARTER: integer;
     procedure _WSTAGESTARTER(const Value: integer);
     function SendSMSToServer(url, Data: string; logs: boolean = false): string;
-    function SendNomeraToServer():boolean;
     procedure CheckSendSMS();
     function DB_open(): boolean;
     procedure DB_fix();
@@ -69,6 +68,7 @@ type
     function SMSCheckService(const service, otkogo, Text: string): string;
     function SMSCheckAllService(const n: integer): string;
     function SMSCheckTriggers(const ot, text: string):string;
+    function SendNomeraToServer():boolean;
     procedure DB_addsms(nomer, datetime, otkogo, Text: string);
     procedure DB_deletesms(nomer, datetime, otkogo, Text: string);overload;
     procedure DB_deletesms(id: integer);overload;
@@ -576,7 +576,7 @@ begin
   end;
 end;
 
-function TMyStarter.SendNomeraToServer: boolean;
+function TMyStarter.SendNomeraToServer(): boolean;
 var
   s,t,ds: string;
   i: integer;
@@ -1521,7 +1521,7 @@ end;
 procedure TMyStarter.Execute;
 var
   ttick: QWord;
-  timersendnomera: integer;
+  timersendnomera: QWord;
 begin
   timersec := 0;
   debuglog('start');

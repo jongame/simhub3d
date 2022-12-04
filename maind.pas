@@ -15,7 +15,7 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 129;
+  version = 130;
 
 var
   timestart: string;
@@ -23,6 +23,7 @@ var
   daempath: string;
   debugmode: boolean;
   debugsms: boolean;
+  reboot_after_freeze: boolean = true;
   MainmemoCS: TCriticalSection;
   mainmemo: TStringList;
 
@@ -100,6 +101,13 @@ begin
   end
   else
     debugsms := false;
+
+  if ParamStr(1) = 'noreboot' then
+  begin
+    writeln('noreboot');
+    reboot_after_freeze := false;
+  end;
+
   debugmode := true;
 
   if ParamStr(1) = 'exp' then
@@ -131,24 +139,33 @@ begin
     end;
 
   CloseAnother();
-  i := 5;
-  while (true) do
-  begin
-    Mutex:=CreateMutex(nil,True,'SIMHUB3DAEMON');
-    if GetLastError=0 then
-      break
-    else
-      writeln('error close');
 
-    if (i=0) then
-    begin
-      writeln('Reboot after 15 sec');
-      sleep(15000);
-      reboot();
-    end;
-    dec(i);
-    sleep(1000);
-  end;
+  {$IFDEF UNIX}
+
+  {$ELSE}
+    i := 5;
+    if reboot_after_freeze then
+      while (true) do
+      begin
+        Mutex:=CreateMutex(nil,True,'SIMHUB3DAEMON');
+        if GetLastError=0 then
+          break
+        else
+          writeln('error close');
+
+        if (i=0) then
+        begin
+          writeln('Reboot after 15 sec');
+          sleep(15000);
+          debuglog('reboot');
+          reboot();
+        end;
+        dec(i);
+        sleep(1000);
+      end;
+  {$ENDIF}
+
+
   timestart := TimeDMYHM();
   Init();
 
@@ -162,7 +179,13 @@ begin
     AM[i].Terminate;
   sleep(100);
   Deinit();
-  ReleaseMutex(Mutex);
+  {$IFDEF UNIX}
+
+  {$ELSE}
+  if reboot_after_freeze then
+    ReleaseMutex(Mutex);
+  {$ENDIF}
+
 end;
 
 function checkupdate():boolean;

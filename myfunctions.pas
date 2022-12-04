@@ -385,7 +385,10 @@ begin
   {$IFDEF UNIX}
 
   {$ELSE}
-  ShellExecute(0,nil, PChar('SIMHUB3D.exe'),nil,nil,1)
+  if reboot_after_freeze then
+    ShellExecute(0,nil, PChar('SIMHUB3D.exe'),nil,nil,1)
+  else
+    ShellExecute(0,nil, PChar('SIMHUB3D.exe'),' noreboot',nil,1);
   {$ENDIF}
 end;
 

@@ -492,6 +492,20 @@ $("#btn_urlactivesms_set").click(function() {
 	});
 });
 
+$("#btn_urlactivesms_send").click(function() {
+	$(this).prop( "disabled", true );
+	setTimeout(function() {$("#btn_urlactivesms_send").prop( "disabled", false );}, 1500);
+	$.ajax({
+      type:"post",
+      url:"/starter/urlactivesms_send",
+      datatype:"json",
+      success:function(msg)
+        {
+			//location.reload();
+        }
+	});
+});
+
 $("#btn_systemexit").click(function() {
 	$(this).prop( "disabled", true );
 	setTimeout(function() {$("#btn_systemexit").prop( "disabled", false );}, 1500);

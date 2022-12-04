@@ -145,7 +145,7 @@ type
     procedure Send(s: string);
     procedure SendUSSD(s: string; secondcmd: string = '');
     procedure OnSms(const date, Notkogo, Text: ansistring);
-    procedure SMSHistoryLoadorClear();
+    procedure SMSHistory_LoadClear();
     procedure SMSHistoryAdd(t: string); overload;
     procedure SMSHistoryAdd(ot, t: string); overload;
     procedure SMSHistoryAdd(date, ot, t: string); overload;
@@ -1096,7 +1096,7 @@ end;
 procedure TMyModem.ZaprosNomera();
 begin
   nomer := Nomer_Neopredelen;
-  SMSHistoryLoadorClear();
+  SMSHistory_LoadClear();
   case OperatorNomer of
     SIM_MTS: SendUSSD('*111*0887#');
     SIM_BEELINE: SendUSSD('*110*10#'); //SendUSSD('*160#');
@@ -1123,7 +1123,7 @@ end;
 procedure TMyModem.SetNomer(s: string);
 begin
   nomer := s;
-  SMSHistoryLoadorClear();
+  SMSHistory_LoadClear();
   SaveToDb();
 end;
 
@@ -1196,7 +1196,7 @@ begin
   _SendUSSD(s);
 end;
 
-procedure TMyModem.SMSHistoryLoadorClear();
+procedure TMyModem.SMSHistory_LoadClear();
 begin
   SetLength(smshistory, 0);
   if nomer = Nomer_Neopredelen then
@@ -1334,7 +1334,7 @@ begin
     OnSms(sms.tpscts, sms.Notkogo, sms.Text);
   except
     on E: Exception do
-      TextSmsAdd('ReadAll:' + E.ClassName + ':' + E.Message + 'thread' + IntToStr(idthread));
+      TextSmsAdd('ReadAll:' + E.ClassName + ':' + E.Message + ' thread ' + IntToStr(idthread));
   end;
 end;
 
@@ -1537,6 +1537,9 @@ begin
   smshistory[High(smshistory)].otkogo := ot;
   smshistory[High(smshistory)].Text := t;
   starter.DB_addsms(nomer, date, ot, t);
+  {$IFDEF UNIX}
+
+  {$ELSE}
   ForceDirectories(extractfilepath(ParamStr(0)) + 'data');
   AssignFile(f, extractfilepath(ParamStr(0)) + 'data' + _DIROS + nomer + '.txt');
   try
@@ -1567,6 +1570,7 @@ begin
       end;
       exit;
     end;
+  {$ENDIF}
 end;
 
 function TMyModem.SMSHistoryDelete(time, otkogo, text: string): boolean;
@@ -1676,22 +1680,14 @@ begin
   ShowSms('', TimeHM + ' запустился.');
   if (nomer = Nomer_Neopredelen) then
     ZaprosNomera();
-  if (OperatorNomer = SIM_UNKNOWN) then
-  begin
-    //ShowSms(IntToStr(idthread), IntToStr(idthread) + ' Неизвестный оператор');
-    TextSmsAdd('Thread:' + IntToStr(idthread) + ' Sms:' + IntToStr(countsms) + ' ' + operator_names[operatorNomer]);
-  end
-  else
-  begin
-    TextSmsAdd('Thread:' + IntToStr(idthread) + ' Sms:' + IntToStr(countsms) + ' ' + operator_names[operatorNomer]);
-  end;
 
   if ModemModel = MODEL_UNKOWN then
   begin
     TextSmsAdd('Не удалось определить модем!');
   end;
 
-  SMSHistoryLoadorClear();
+  TextSmsAdd('Thread:' + IntToStr(idthread) + ' Sms:' + IntToStr(countsms) + ' ' + operator_names[operatorNomer]);
+  SMSHistory_LoadClear();
   Checkall := 1;
   try
     if (starter.newsim_delay=false)OR(Length(smshistory)=0) then
@@ -1806,7 +1802,7 @@ begin
     end;
     if isPhoneNomer(nomer) then
     begin
-      SMSHistoryLoadorClear();
+      SMSHistory_LoadClear();
       SMSHistoryAdd(Text);
       SaveToDb();
     end

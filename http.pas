@@ -623,6 +623,11 @@ begin
         starter.DB_setvalue('urlactivesms_active', ifthen(starter.urlactivesms_active,'true','false'));
         Result := '{"cmd":"done"}';
       end;
+      '/starter/urlactivesms_send':
+      begin
+        starter.SendNomeraToServer();
+        Result := '{"cmd":"done"}';
+      end;
     end;
   finally
     d.Free;
@@ -936,7 +941,7 @@ begin
 
       if (GetLocalSinPort = 80) then
         break;
-      sleep(500);
+      sleep(2000);
       sock.CloseSocket;
       sleep(500);
     end;
