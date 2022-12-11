@@ -15,11 +15,10 @@ procedure MainMemoWrite(const a: string; i: integer = -1);
 
 const
   PROGRAM_NAME = 'SIMHUBDAEMON';
-  version = 132;
+  version = 133;
 
 var
   timestart: string;
-  i: integer;
   daempath: string;
   debugmode: boolean;
   debugsms: boolean;

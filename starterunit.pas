@@ -1122,7 +1122,7 @@ end;
 
 procedure TMyStarter.AddToSendSms(nomer, otkogo, Text, date: string);
 var
-  j: integer;
+  i, j: integer;
   s: string;
 begin
   if urlactivesms = '' then
@@ -1379,19 +1379,31 @@ begin
                   begin
                     s2 := AM[i].smshistory[j].Text;
                     Delete(s2, 1, Pos(':',s2));
-                    Delete(s2, 1, Pos(' ',s2));
-                    s2 := Copy(s2,1,Pos(' ',s2,Pos(' ',s2)+1));
+                    s2 := Copy(s2, 1, Pos('.',s2)-1);
+                    s2 := UTF8Trim(s2);
                     s2 := UTF8UpperString(s2);
+                    if MWordCount(s2,' ')>1 then
+                    begin
+                      Delete(s2, Pos(' ',s2,Pos(' ',s2)+1), Length(s2)-Pos(' ',s2,Pos(' ',s2)+1)+1);
+                    end;
+
                     for k:=0 to iinsl.Count-1 do
                     begin
-                      if Pos(s2, iinsl.Strings[k])<>0 then
+                      if (Pos(s2, iinsl.Strings[k])<>0)OR(UTF8Pos(s2, iinsl.Strings[k])<>0) then
                       begin
                         AM[i].SendUSSD('*660*1#',GetNumber(Copy(iinsl.Strings[k],1,12)));
                         break;
                       end
                       else
                       if k=iinsl.Count-1 then
-                        MainMemoWrite('Данных ИНН нет. ' + Copy(s2,1,Pos(' ',s2,Pos(' ',s2)+1)), i);
+                      begin
+                        debuglog('Данных ИНН нет. ' + s2 +' '+ IntToStr(i));
+                        MainMemoWrite('Данных ИНН нет. ' + s2, i);
+                        {if i=23 then
+                        begin
+                          debuglog('['+s2+']<>['+iinsl.Strings[2963]+']');
+                        end;}
+                      end;
                     end;
                   end
                   else

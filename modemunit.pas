@@ -1850,21 +1850,29 @@ begin
   if (Notkogo = 'activ') and (Pos('Данный номер зарегистрирован:', Text) <> 0) and (SMSHistoryFind('6006', 'Устройство успешно зарегистрировано.')=-1)
     and (starter.iinsl.Count<>0) then
   begin
+
     s := Text;
     Delete(s, 1, Pos(':',s));
-    Delete(s, 1, Pos(' ',s));
-    s := Copy(s,1,Pos(' ',s,Pos(' ',s)+1));
+    s := Copy(s, 1, Pos('.',s)-1);
+    s := UTF8Trim(s);
     s := UTF8UpperString(s);
+    if MWordCount(s,' ')>1 then
+    begin
+      Delete(s, Pos(' ',s,Pos(' ',s)+1), Length(s)-Pos(' ',s,Pos(' ',s)+1)+1);
+    end;
+
     for i:=0 to starter.iinsl.Count-1 do
     begin
-      if Pos(s, starter.iinsl.Strings[i])<>0 then
+      if (Pos(s, starter.iinsl.Strings[i])<>0)or(UTF8Pos(s, starter.iinsl.Strings[i])<>0) then
       begin
         SendUSSD('*660*1#',GetNumber(Copy(starter.iinsl.Strings[i],1,12)));
         break;
       end
       else
       if i=starter.iinsl.Count-1 then
+      begin
         ShowSms('SYSTEM', '[' + date + '] Данных ИНН нет. ' + Copy(s,1,Pos(' ',s,Pos(' ',s)+1)));
+      end;
     end;
   end;
 

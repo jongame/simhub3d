@@ -955,8 +955,7 @@ begin
         if lastError = 0 then
           TTCPHttpThrd.Create(ClientSock);
       end;
-    until serverwork=false;
-    CloseSocket();
+    until false;
   end;
 end;
 

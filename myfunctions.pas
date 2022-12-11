@@ -56,7 +56,6 @@ function TimeDMY():string;
 function TimeYMDHM():string;overload;
 function TimeYMDHM(a:tdatetime):string;overload;
 function Pos(a,b:string;c:cardinal):integer;overload;
-
 procedure DeleteArrayIndex(var X: TArrayofMySmsinFile; Index: Integer);overload;
 procedure DeleteArrayIndex(var X: TArraysmstosend; Index: Integer);overload;
 procedure DeleteArrayIndex(var X: TArrayString; Index: Integer);overload;
@@ -78,12 +77,14 @@ function Byte2Str(const arr: TArrayofbyte; forcestr: boolean): string;
 function Str2Byte(const str: string; autohex: boolean): TArrayofbyte;
 function NormalNomer2PDU(t:string):string;
 function utf16tohex(s: string):string;
+function MWordCount(s,c: string):integer;
 procedure DebugLog(s:string);overload;
 procedure DebugLog(s,fs:string);overload;
 procedure DebugLogByte(s,fs:string);
 procedure start_self();
 procedure reboot();
 procedure TextToFile(text, filename: string);
+
 
 implementation
 
@@ -336,6 +337,18 @@ begin
       exit(false);
 end;
 
+function MWordCount(s, c: string): integer;
+var
+  ts: string;
+begin
+  result := 0;
+  ts := s;
+  while Pos(c, ts)<>0 do
+  begin
+    ts := StringReplace(ts,c,'',[]);
+    inc(result);
+  end;
+end;
 
 procedure DebugLog(s: string);overload;
 begin
