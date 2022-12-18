@@ -864,7 +864,7 @@ var
   M: TMemoryStream;
   res: string;
   buf: array[1..2048] of byte;
-  Count: integer;
+  Count, i: integer;
 begin
   M := TMemoryStream.Create;
   with TProcess.Create(nil) do
@@ -1546,6 +1546,7 @@ begin
     if urlactivesms_active then
       if (timersendnomera >= 60) then
       begin
+        timersendnomera := timersendnomera - 30;
         if SendNomeraToServer() then
         begin
           timersendnomera := 0;

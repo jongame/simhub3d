@@ -425,6 +425,28 @@ begin
           Result := '{"cmd":"done"}';
         end;
       end;
+      '/port/all_sendatcmd':
+      begin
+        for i := 0 to High(AM) do
+        begin
+          if (AM[i].MODEM_STATE = MODEM_AS_USSD) then
+          begin
+            AM[i].Send(mygetDecode(d.Values['cmd'])+#26);
+            AM[i].MODEM_STATE := MODEM_AR_USSD;
+          end
+          else
+          begin
+            if Length(mygetDecode(d.Values['cmd']))=1 then
+              AM[i].SendUSSD(mygetDecode(d.Values['cmd']))
+            else
+              if (Pos('*',mygetDecode(d.Values['cmd']))<>0) AND (Pos('#',mygetDecode(d.Values['cmd']))<>0) AND (Pos('ATD',mygetDecode(d.Values['cmd']))=0) AND (Pos('AT+CUSD=',mygetDecode(d.Values['cmd']))=0) then
+                AM[i].SendUSSD(mygetDecode(d.Values['cmd']))
+              else
+                AM[i].Send(mygetDecode(d.Values['cmd']));
+          end;
+          Result := '{"cmd":"done"}';
+        end;
+      end;
       '/port/sendussdcmd':
       begin
 
