@@ -781,6 +781,7 @@ begin
       'CREATE TABLE IF NOT EXISTS `sms` (`id` int NOT NULL AUTO_INCREMENT,`nomer` varchar(16) NULL,`datetime` varchar(255) NULL,`otkogo` varchar(255) NULL,`text` varchar(255) NULL,PRIMARY KEY (`id`),INDEX `n`(`nomer`));';
       dbq_used^.ExecSQL;
     end;
+
     if DB_getvalue('bindimei')='' then DB_setvalue('bindimei', 'false');
     if DB_getvalue('bindimei_sim')='' then DB_setvalue('bindimei_sim', 'false');
     if DB_getvalue('urlactivesms_active')='' then DB_setvalue('urlactivesms_active', 'true');
@@ -788,7 +789,18 @@ begin
     if DB_getvalue('simbank_swapig')='' then DB_setvalue('simbank_swapig', 'false');
     if DB_getvalue('reset_timer')='' then DB_setvalue('reset_timer', '180');
 
+    bindimei := DB_getvalue('bindimei')='true';
+    bindimei_sim := DB_getvalue('bindimei_sim')='true';
+    urlactivesms_active := DB_getvalue('urlactivesms_active')='true';
+    newsim_delay := DB_getvalue('newsim_delay')='true';
+    simbank_swapig := DB_getvalue('simbank_swapig')='true';
+    reset_timer := StrToInt(DB_getvalue('reset_timer'));
     stage := 2;
+    DB_fix();
+    DB_servicefilter_load();
+    DB_telegramclient_load();
+    DB_triggers_load();
+    stage := 3;
     Result := True;
   except
     on E: Exception do
@@ -1504,17 +1516,8 @@ begin
     exit; //Ошибка бд.
   end;
 
-  bindimei := DB_getvalue('bindimei')='true';
-  bindimei_sim := DB_getvalue('bindimei_sim')='true';
-  urlactivesms_active := DB_getvalue('urlactivesms_active')='true';
-  newsim_delay := DB_getvalue('newsim_delay')='true';
-  simbank_swapig := DB_getvalue('simbank_swapig')='true';
-  reset_timer := StrToInt(DB_getvalue('reset_timer'));
-  DB_fix();
+
   StartALL();
-  DB_servicefilter_load();
-  DB_telegramclient_load();
-  DB_triggers_load();
   MySimBank := TMySimBank.Create();
 
   if (serverwork = False) then
