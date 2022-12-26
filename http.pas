@@ -1305,7 +1305,7 @@ begin
         headers.Add('Content-type: Text/Html; charset=utf-8');
         l := TStringList.Create;
         try
-          l.Text :=IntToStr(starter._mainstage);
+          l.Text :=IntToStr(starter._mainstage) + ' ' + IntToStr(starter._mainstage2);
           l.SaveToStream(OutputData);
         finally
           l.Free;

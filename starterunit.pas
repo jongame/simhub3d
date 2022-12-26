@@ -44,7 +44,7 @@ type
     procedure DB_close();
     procedure RunIIN();
   public
-    _mainstage: byte;
+    _mainstage,_mainstage2: byte;
     timersec: QWord;
     bindimei, bindimei_sim, urlactivesms_active, newsim_delay: boolean;
     reset_timer: integer;
@@ -645,6 +645,7 @@ begin
   t := GetTickCount64();
   while ((GetTickCount64()-t)<1000) do
   begin
+    _mainstage2 := 1;
     _cs.Enter;
     try
       if (Length(arrayofsmstosend) = 0) then
@@ -653,6 +654,7 @@ begin
     finally
       _cs.Leave;
     end;
+    _mainstage2 := 2;
     case temp.typesnd of
       1:
       begin
@@ -666,9 +668,11 @@ begin
           finally
             Free;
           end;
+        _mainstage2 := 3;
         if (urlactivesms <> '') then
           if (SendSMSToServer(urlactivesms, postdata, debugsms) <> 'ok') then
             exit; //Отправка не удалась, выходим
+          _mainstage2 := 4;
       end;
       2:
       begin
@@ -682,11 +686,15 @@ begin
           finally
             Free;
           end;
+        _mainstage2 := 5;
         if (urlactivesms <> '') then
           if (SendSMSToServer(urlactivesms, postdata, debugsms) <> 'ok') then
             exit; //Отправка не удалась, выходим
+        _mainstage2 := 6;
+
       end;
     end;
+    _mainstage2 := 7;
     //Значит успешно отправили смс или команду на активацию или деактивацию, удаляем первый элемент очереди
     _cs.Enter;
     try
@@ -694,7 +702,9 @@ begin
     finally
       _cs.Leave;
     end;
+    _mainstage2 := 8;
   end;
+  _mainstage2 := 9;
 end;
 
 function TMyStarter.DB_open(): boolean;
@@ -704,7 +714,7 @@ var
 begin
   stage := 0;
   Result := False;
-  _cs.Enter;
+
   dbc_sms := TZConnection.Create(nil);
   dbq_sms := TZQuery.Create(nil);
   dbc_sms.Protocol := 'MariaDB-10';
@@ -715,101 +725,105 @@ begin
   dbc.Database := extractfilepath(ParamStr(0)) + 'data.db';
   dbc.Protocol := 'sqlite-3';
   dbq.Connection := dbc;
+  _cs.Enter;
   try
-    if (not FileExists(extractfilepath(ParamStr(0)) + 'data.db')) then
-    begin //Создаём таблицы
-      dbq.SQL.Text := 'CREATE TABLE `keyvalue` ("key"  TEXT NOT NULL, "value"  TEXT, PRIMARY KEY ("key"));';
-      dbq.ExecSQL;
-      DB_setvalue('ignore', '');
-      DB_setvalue('bindimei', 'false');
-      DB_setvalue('bindimei_sim', 'false');
-      DB_setvalue('urlactivesms_active', 'true');
-      DB_setvalue('urlactivesms', '');
-      DB_setvalue('urldatabasesms', '');
-      DB_setvalue('servername', 'new server');
-      DB_setvalue('servercountry', 'ru');
-    end;
-    urldatabasesms := DB_getvalue('urldatabasesms');
-    s := urldatabasesms;
-    if (urldatabasesms = '') then
-    begin
-      inc(stage);
-      dbq_used := @dbq;
-      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `telegram` ("id" INTEGER PRIMARY KEY AUTOINCREMENT,"idtelegram" TEXT,"service" TEXT,UNIQUE ("idtelegram" ASC));';
-      dbq_used^.ExecSQL;
-      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `filter_service` ("service" TEXT NOT NULL,"filter" TEXT,PRIMARY KEY ("service"));';
-      dbq_used^.ExecSQL;
-      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `triggers` ("id" INTEGER NOT NULL, "input" TEXT NULL, "output" TEXT NULL, PRIMARY KEY ("id"));';
-      dbq_used^.ExecSQL;
-      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `keyvalue` ("key"  TEXT NOT NULL, "value"  TEXT, PRIMARY KEY ("key"));';
-      dbq_used^.ExecSQL;
-      dbq_used^.SQL.Text :=
-        'CREATE TABLE IF NOT EXISTS `sms` ("id"  INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL DEFAULT 0, "nomer"  TEXT(16) NOT NULL, "datetime"  TEXT, "otkogo"  TEXT, "text"  TEXT);';
-      dbq_used^.ExecSQL;
-      dbq_used^.SQL.Text := 'CREATE INDEX IF NOT EXISTS "n" ON `sms` ("nomer" ASC);';
-      dbq_used^.ExecSQL;
-      dbq_used^.SQL.Text := 'INSERT OR IGNORE INTO `keyvalue`("key", "value") VALUES (''telegrambot'', '''');';
-      dbq_used^.ExecSQL;
-    end
-    else
-    begin
-      inc(stage);
-      dbc_sms.User :=Copy(s,1,Pos(':',s)-1);
-      Delete(s,1,Pos(':',s));
-      dbc_sms.Password :=Copy(s,1,Pos('@',s)-1);
-      Delete(s,1,Pos('@',s));
-      dbc_sms.HostName:=Copy(s,1,Pos(':',s)-1);
-      Delete(s,1,Pos(':',s));
-      dbc_sms.Port := StrToInt(s);
-      dbq_used := @dbq_sms;
-      inc(stage);
-      dbq_used^.SQL.Text := 'CREATE DATABASE IF NOT EXISTS `sms3d`;';
-      dbq_used^.ExecSQL;
-      inc(stage);
-      dbq_used^.SQL.Text := 'USE `sms3d`;';
-      dbq_used^.ExecSQL;
-      inc(stage);
-      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `telegram`  (`id` integer AUTO_INCREMENT,`idtelegram` text,`service` text ,PRIMARY KEY (`id`));';
-      dbq_used^.ExecSQL;
-      inc(stage);
-      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `filter_service` (`service` TEXT NOT NULL,`filter` TEXT,PRIMARY KEY (`service`(100)));';
-      dbq_used^.ExecSQL;
-      inc(stage);
-      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `triggers` (`id` INTEGER NOT NULL, `input` TEXT NULL, `output` TEXT NULL, PRIMARY KEY (`id`));';
-      dbq_used^.ExecSQL;
-      inc(stage);
-      dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `keyvalue` (`key`  TEXT NOT NULL, `value`  TEXT, PRIMARY KEY (`key`(100)));';
-      dbq_used^.ExecSQL;
-      dbq_used^.SQL.Text :=
-      'CREATE TABLE IF NOT EXISTS `sms` (`id` int NOT NULL AUTO_INCREMENT,`nomer` varchar(16) NULL,`datetime` varchar(255) NULL,`otkogo` varchar(255) NULL,`text` varchar(255) NULL,PRIMARY KEY (`id`),INDEX `n`(`nomer`));';
-      dbq_used^.ExecSQL;
-    end;
+    try
+      if (not FileExists(extractfilepath(ParamStr(0)) + 'data.db')) then
+      begin //Создаём таблицы
+        dbq.SQL.Text := 'CREATE TABLE `keyvalue` ("key"  TEXT NOT NULL, "value"  TEXT, PRIMARY KEY ("key"));';
+        dbq.ExecSQL;
+        DB_setvalue('ignore', '');
+        DB_setvalue('bindimei', 'false');
+        DB_setvalue('bindimei_sim', 'false');
+        DB_setvalue('urlactivesms_active', 'true');
+        DB_setvalue('urlactivesms', '');
+        DB_setvalue('urldatabasesms', '');
+        DB_setvalue('servername', 'new server');
+        DB_setvalue('servercountry', 'ru');
+      end;
+      urldatabasesms := DB_getvalue('urldatabasesms');
+      s := urldatabasesms;
+      if (urldatabasesms = '') then
+      begin
+        inc(stage);
+        dbq_used := @dbq;
+        dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `telegram` ("id" INTEGER PRIMARY KEY AUTOINCREMENT,"idtelegram" TEXT,"service" TEXT,UNIQUE ("idtelegram" ASC));';
+        dbq_used^.ExecSQL;
+        dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `filter_service` ("service" TEXT NOT NULL,"filter" TEXT,PRIMARY KEY ("service"));';
+        dbq_used^.ExecSQL;
+        dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `triggers` ("id" INTEGER NOT NULL, "input" TEXT NULL, "output" TEXT NULL, PRIMARY KEY ("id"));';
+        dbq_used^.ExecSQL;
+        dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `keyvalue` ("key"  TEXT NOT NULL, "value"  TEXT, PRIMARY KEY ("key"));';
+        dbq_used^.ExecSQL;
+        dbq_used^.SQL.Text :=
+          'CREATE TABLE IF NOT EXISTS `sms` ("id"  INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL DEFAULT 0, "nomer"  TEXT(16) NOT NULL, "datetime"  TEXT, "otkogo"  TEXT, "text"  TEXT);';
+        dbq_used^.ExecSQL;
+        dbq_used^.SQL.Text := 'CREATE INDEX IF NOT EXISTS "n" ON `sms` ("nomer" ASC);';
+        dbq_used^.ExecSQL;
+        dbq_used^.SQL.Text := 'INSERT OR IGNORE INTO `keyvalue`("key", "value") VALUES (''telegrambot'', '''');';
+        dbq_used^.ExecSQL;
+      end
+      else
+      begin
+        inc(stage);
+        dbc_sms.User :=Copy(s,1,Pos(':',s)-1);
+        Delete(s,1,Pos(':',s));
+        dbc_sms.Password :=Copy(s,1,Pos('@',s)-1);
+        Delete(s,1,Pos('@',s));
+        dbc_sms.HostName:=Copy(s,1,Pos(':',s)-1);
+        Delete(s,1,Pos(':',s));
+        dbc_sms.Port := StrToInt(s);
+        dbq_used := @dbq_sms;
+        inc(stage);
+        dbq_used^.SQL.Text := 'CREATE DATABASE IF NOT EXISTS `sms3d`;';
+        dbq_used^.ExecSQL;
+        inc(stage);
+        dbq_used^.SQL.Text := 'USE `sms3d`;';
+        dbq_used^.ExecSQL;
+        inc(stage);
+        dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `telegram`  (`id` integer AUTO_INCREMENT,`idtelegram` text,`service` text ,PRIMARY KEY (`id`));';
+        dbq_used^.ExecSQL;
+        inc(stage);
+        dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `filter_service` (`service` TEXT NOT NULL,`filter` TEXT,PRIMARY KEY (`service`(100)));';
+        dbq_used^.ExecSQL;
+        inc(stage);
+        dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `triggers` (`id` INTEGER NOT NULL, `input` TEXT NULL, `output` TEXT NULL, PRIMARY KEY (`id`));';
+        dbq_used^.ExecSQL;
+        inc(stage);
+        dbq_used^.SQL.Text := 'CREATE TABLE IF NOT EXISTS `keyvalue` (`key`  TEXT NOT NULL, `value`  TEXT, PRIMARY KEY (`key`(100)));';
+        dbq_used^.ExecSQL;
+        dbq_used^.SQL.Text :=
+        'CREATE TABLE IF NOT EXISTS `sms` (`id` int NOT NULL AUTO_INCREMENT,`nomer` varchar(16) NULL,`datetime` varchar(255) NULL,`otkogo` varchar(255) NULL,`text` varchar(255) NULL,PRIMARY KEY (`id`),INDEX `n`(`nomer`));';
+        dbq_used^.ExecSQL;
+      end;
 
-    if DB_getvalue('bindimei')='' then DB_setvalue('bindimei', 'false');
-    if DB_getvalue('bindimei_sim')='' then DB_setvalue('bindimei_sim', 'false');
-    if DB_getvalue('urlactivesms_active')='' then DB_setvalue('urlactivesms_active', 'true');
-    if DB_getvalue('newsim_delay')='' then DB_setvalue('newsim_delay', 'false');
-    if DB_getvalue('simbank_swapig')='' then DB_setvalue('simbank_swapig', 'false');
-    if DB_getvalue('reset_timer')='' then DB_setvalue('reset_timer', '180');
+      if DB_getvalue('bindimei')='' then DB_setvalue('bindimei', 'false');
+      if DB_getvalue('bindimei_sim')='' then DB_setvalue('bindimei_sim', 'false');
+      if DB_getvalue('urlactivesms_active')='' then DB_setvalue('urlactivesms_active', 'true');
+      if DB_getvalue('newsim_delay')='' then DB_setvalue('newsim_delay', 'false');
+      if DB_getvalue('simbank_swapig')='' then DB_setvalue('simbank_swapig', 'false');
+      if DB_getvalue('reset_timer')='' then DB_setvalue('reset_timer', '180');
 
-    bindimei := DB_getvalue('bindimei')='true';
-    bindimei_sim := DB_getvalue('bindimei_sim')='true';
-    urlactivesms_active := DB_getvalue('urlactivesms_active')='true';
-    newsim_delay := DB_getvalue('newsim_delay')='true';
-    simbank_swapig := DB_getvalue('simbank_swapig')='true';
-    reset_timer := StrToInt(DB_getvalue('reset_timer'));
-    stage := 2;
-    DB_fix();
-    DB_servicefilter_load();
-    DB_telegramclient_load();
-    DB_triggers_load();
-    stage := 3;
-    Result := True;
-  except
-    on E: Exception do
-      ShowInfo(E.ClassName + ':' + E.Message + ' ' + IntToStr(stage));
+      bindimei := DB_getvalue('bindimei')='true';
+      bindimei_sim := DB_getvalue('bindimei_sim')='true';
+      urlactivesms_active := DB_getvalue('urlactivesms_active')='true';
+      newsim_delay := DB_getvalue('newsim_delay')='true';
+      simbank_swapig := DB_getvalue('simbank_swapig')='true';
+      reset_timer := StrToInt(DB_getvalue('reset_timer'));
+      stage := 2;
+      DB_fix();
+      DB_servicefilter_load();
+      DB_telegramclient_load();
+      DB_triggers_load();
+      stage := 3;
+      Result := True;
+    except
+      on E: Exception do
+        ShowInfo(E.ClassName + ':' + E.Message + ' ' + IntToStr(stage));
+    end;
+  finally
+    _cs.Leave;
   end;
-  _cs.Leave;
 end;
 
 procedure TMyStarter.DB_fix();
@@ -1506,18 +1520,23 @@ var
   ttick: QWord;
   timersendnomera: QWord;
 begin
+  _mainstage2 := 0;
   _mainstage := 0;
   timersec := 0;
   ShowInfo('Запускаю...');
   debuglog('s-0');
-  if (DB_open() = False) then
-  begin
-    ShowInfo('Ошибка файла DB, перезапуск');
-    sleep(2500);
-    start_self();
-    serverwork := false;
-    starterwork := false;
-    exit; //Ошибка бд.
+  try
+    if (DB_open() = False) then
+    begin
+      ShowInfo('Ошибка файла DB, перезапуск');
+      sleep(2500);
+      start_self();
+      serverwork := false;
+      starterwork := false;
+      exit; //Ошибка бд.
+    end;
+  finally
+
   end;
   debuglog('s-1');
   StartALL();
@@ -1581,7 +1600,11 @@ begin
         iinslcount := 0;
     end;
     _mainstage := 8;
-    CheckSendSMS();
+    try
+      CheckSendSMS();
+    finally
+
+    end;
     _mainstage := 9;
   end;
   _mainstage := 99;

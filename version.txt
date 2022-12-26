@@ -1,1 +1,1 @@
-136=https://github.com/jongame/simhub3d/releases/download/v136/SIMHUB3D.exe
+137=https://github.com/jongame/simhub3d/releases/download/v137/SIMHUB3D.exe
