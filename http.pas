@@ -1305,7 +1305,7 @@ begin
         headers.Add('Content-type: Text/Html; charset=utf-8');
         l := TStringList.Create;
         try
-          //l.Text := IntToStr(byte(MySimBank.SIMBANK_STATE)) + ' ' + IntToStr(byte(MySimBank.stage));
+          l.Text :=IntToStr(starter._mainstage);
           l.SaveToStream(OutputData);
         finally
           l.Free;

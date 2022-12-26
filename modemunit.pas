@@ -1196,11 +1196,26 @@ begin
 end;
 
 procedure TMyModem.SMSHistory_LoadClear();
+var
+  c: word;
 begin
   SetLength(smshistory, 0);
   if nomer = Nomer_Neopredelen then
     exit;
-  starter.DB_loadsms(idthread);
+  c := 5;
+  while c<>0 do
+  begin
+    if c=0 then
+    begin
+      ShowSms('', TimeHM + ' Не удалось загрузить смс, перезапуск.');
+      PORT_STATE := PORT_RESTART;
+      exit;
+    end;
+    if starter.DB_loadsms(idthread) then
+      break;
+    dec(c);
+    sleep(2500);
+  end;
   if (Length(smshistory)=0)AND(starter.servercountry='kz') then
   begin
     SMSHistoryAdd('new sim');

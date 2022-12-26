@@ -44,6 +44,7 @@ type
     procedure DB_close();
     procedure RunIIN();
   public
+    _mainstage: byte;
     timersec: QWord;
     bindimei, bindimei_sim, urlactivesms_active, newsim_delay: boolean;
     reset_timer: integer;
@@ -70,7 +71,7 @@ type
     procedure DB_addsms(nomer, datetime, otkogo, Text: string);
     procedure DB_deletesms(nomer, datetime, otkogo, Text: string);overload;
     procedure DB_deletesms(id: integer);overload;
-    procedure DB_loadsms(idthread: integer);
+    function DB_loadsms(idthread: integer):boolean;
 
     procedure DB_triggers_load();
     procedure DB_triggers_save(const val: string);
@@ -282,11 +283,12 @@ begin
   end;
 end;
 
-procedure TMyStarter.DB_loadsms(idthread: integer);
+function TMyStarter.DB_loadsms(idthread: integer): boolean;
 var
   i: integer;
   tc: integer;
 begin
+  result := false;
   _cs.Enter;
   try
     if (urldatabasesms<>'')  then
@@ -317,6 +319,7 @@ begin
       AM[idthread].smshistory[i].Text := dbq_used^.FieldByName('text').AsString;
       dbq_used^.Next;
     end;
+    result := true;
   finally
     dbq_used^.Close;
     _cs.Leave;
@@ -1503,9 +1506,10 @@ var
   ttick: QWord;
   timersendnomera: QWord;
 begin
+  _mainstage := 0;
   timersec := 0;
-  debuglog('start');
   ShowInfo('Запускаю...');
+  debuglog('s-0');
   if (DB_open() = False) then
   begin
     ShowInfo('Ошибка файла DB, перезапуск');
@@ -1515,11 +1519,10 @@ begin
     starterwork := false;
     exit; //Ошибка бд.
   end;
-
-
+  debuglog('s-1');
   StartALL();
   MySimBank := TMySimBank.Create();
-
+  debuglog('s-2');
   if (serverwork = False) then
   begin
     ShowInfo('Ошибка запуска.');
@@ -1531,8 +1534,11 @@ begin
   TTCPHttpDaemon.Create;
   ttick := GetTickCount64();
   timersendnomera := 55;
+
+  _mainstage := 1;
   while serverwork do
   begin
+    _mainstage := 2;
     drawbox := not drawbox;
     stagestarter := 100;
     while (GetTickCount64()-ttick)<1000 do
@@ -1541,14 +1547,17 @@ begin
     ttick := GetTickCount64() - (GetTickCount64() - ttick - 1000);
     if ((reset_timer<>0) AND ((timersec mod reset_timer) = 0)) then
     begin
+      _mainstage := 3;
       if urlactivesms_active then
         SendNomeraToServer();
+      _mainstage := 4;
       start_self();
     end;
-
+    _mainstage := 5;
     if urlactivesms_active then
       if (timersendnomera >= 60) then
       begin
+        _mainstage := 6;
         timersendnomera := timersendnomera - 30;
         if SendNomeraToServer() then
         begin
@@ -1561,7 +1570,7 @@ begin
       end
       else
         inc(timersendnomera);
-
+    _mainstage := 7;
     if ((timersec mod 10) = 0)AND(iinslcount<>0) then
     begin
       if (reset_timer<>0) then
@@ -1571,9 +1580,13 @@ begin
       if (iinslcount=3)OR(iinslcount=12) then
         iinslcount := 0;
     end;
+    _mainstage := 8;
     CheckSendSMS();
+    _mainstage := 9;
   end;
+  _mainstage := 99;
   DB_close();
+  _mainstage := 100;
   stagestarter := 666;
   starterwork := False;
 end;
