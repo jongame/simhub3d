@@ -108,7 +108,7 @@ type
     operatorNomer: TSIM_OPERATOR;
     DEBUG_STATE, idthread, _arendatype, countsms, _userid: integer;
     _last_response: string;
-    RecvText, scom, _comment, _NOMER, _url, IMEI, ICC, ant, nomersmsservice, regOperator: string;
+    RecvText, scom, _comment, _NOMER, _url, IMEI, ICC, CIMI, ant, nomersmsservice, regOperator: string;
     _actsms: string;
     _SendText, _RecvText, _SmsText: TStringList;
     sms: MyFullSmS;
@@ -1069,6 +1069,7 @@ begin
   nomer := data_neopredelen;
   IMEI := '123456789012345';
   ICC := '123456789012345';
+  CIMI := '123456789012345';
   ant := '';
   nomersmsservice := '';
   _last_response := '';
@@ -2022,6 +2023,7 @@ begin
         else
           SendandState('AT+CXXCID');
       end;
+    MODEM_AS_CIMI: SendandState('AT+CIMI');
     MODEM_AS_CREG: SendandState('AT+CREG?');
     MODEM_AS_COPS: SendandState('AT+COPS?');
     MODEM_AS_QSPN:
@@ -2335,6 +2337,13 @@ begin
             nomer := Nomer_Neopredelen;
             SaveToDb();
           end;
+          RecvState();
+          exit;
+        end;
+        MODEM_AR_CIMI://Проверка CIID
+        begin
+          tmps := GetNumber(sOK);
+          CIMI := tmps;
           RecvState();
           exit;
         end;
