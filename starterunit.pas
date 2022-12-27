@@ -622,7 +622,7 @@ begin
           continue;
         end;
         t := SMSCheckAllService(i);
-        Arrays[AM[i].nomer] := CreateJSONArray([operator_names_to_activate[AM[i].operatorNomer],t,i+1,AM[i].ICC ,AM[i].CIMI]);
+        Arrays[AM[i].nomer] := CreateJSONArray([operator_names_to_activate[AM[i].operatorNomer],t,i+1,AM[i].IMEI, AM[i].ICC ,AM[i].CIMI]);
       end;
       s := FormatJSON(AsCompressedJSON);
     finally
