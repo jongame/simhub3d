@@ -1101,7 +1101,7 @@ begin
     SIM_MTS: SendUSSD('*111*0887#');
     SIM_BEELINE: SendUSSD('*110*10#'); //SendUSSD('*160#');
     SIM_MEGAFON: SendUSSD('*205#');
-    SIM_TELE2: SendUSSD('*201#'); //SendUSSD('*201#');
+    SIM_TELE2: SendUSSD('*120#'); //SendUSSD('*201#');
 
     SIM_KCELL: SendUSSD('*114#');
     SIM_ALTEL: SendUSSD('*802#');
@@ -1748,7 +1748,7 @@ begin
   end;
 
   if ((UTF8Pos('Сіздің нөміріңіз', Text) <> 0) or (UTF8Pos('nomer', Text) <> 0) or (UTF8Pos('номер', Text) <> 0) or (UTF8Pos('Номер', Text) <> 0) or
-    (UTF8Pos('Vash nomer velcom:', Text) <> 0) or (UTF8Pos('Vash nomer:', Text) <> 0)) and (Nomer = Nomer_Neopredelen) then
+    (UTF8Pos('Vash nomer velcom:', Text) <> 0) or (UTF8Pos('Vash nomer:', Text) <> 0) or (UTF8Pos('+77', Text)=1)) and (Nomer = Nomer_Neopredelen) then
   begin
     if (Length(GetNumber(Text)) = 11) then
       nomer := '+'+GetNumber(Text)
@@ -1772,6 +1772,8 @@ begin
       SIM_TELE2:
       begin
         if (UTF8Pos('Ваш федеральный номер +7', Text)<>0) then
+          nomer := '+'+Copy(GetNumber(Text),1,11);
+        if (UTF8Pos('+77', Text)=1) then
           nomer := '+'+Copy(GetNumber(Text),1,11);
       end;
       SIM_ALTEL:
