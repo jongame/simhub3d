@@ -45,6 +45,7 @@ function UCSToAnsi(s:string):string;
 function USSDResponse(s:string):string;
 function DateTimeToUnix(ConvDate: TDateTime): Longint;
 function UnixToDateTime(USec: Longint): TDateTime;
+function ItNoLatin(s:string):Boolean;
 function HashB(S: AnsiString; LenHash: Integer = 256): AnsiString;
 function PORTSTATE2Str(b:byte): string;
 function MODEMSTATE2Str(b:byte): string;
@@ -691,14 +692,14 @@ function DateTimeToUnix(ConvDate: TDateTime): Longint;
 const
   UnixStartDate: TDateTime = 25569.0;
 begin
-Result := Round((ConvDate - UnixStartDate) * 86400);
+  Result := Round((ConvDate - UnixStartDate) * 86400);
 end;
 
 function UnixToDateTime(USec: Longint): TDateTime;
 const
   UnixStartDate: TDateTime = 25569.0;
 begin
-Result := (Usec / 86400) + UnixStartDate;
+  Result := (Usec / 86400) + UnixStartDate;
 end;
 
 function ItNoLatin(s:string):Boolean;
@@ -715,22 +716,6 @@ begin
       exit;
     end;
   end;
-end;
-
-function USSDResponse(s:string):string;
-var
-  b:ansistring;
-begin
-  b:=UTF8ToAnsi(s);
-  result:='';
-  if (Pos('+CUSD: 1',b)<>0) OR (Pos('+CUSD: 2',b)<>0) then
-    result:=Copy(b,Pos('"',b)+1,PosEx('"',b,Pos('"',b)+1)-(Pos('"',b)+1));
-  if Pos('+CUSD: 0',b)<>0 then begin
-    Delete(b,1,Pos('+CUSD: 0,80',b)+11);
-    result:=Copy(b,1,Pos(',',b)-1);
-  end;
-  if ItNoLatin(result)=false then
-    result:=UCSToAnsi(result);
 end;
 
 function UCSToAnsi(s:string):string;
@@ -763,6 +748,31 @@ begin
   begin
     Result := Result + FMT(Copy(S,i*4+1,4));
   end;
+end;
+
+function USSDResponse(s:string):string;
+var
+  b:ansistring;
+begin
+  b:=UTF8ToAnsi(s);
+  result:='';
+  if (Pos('+CUSD: 1',b)<>0) OR (Pos('+CUSD: 2',b)<>0) then
+    result:=Copy(b,Pos('"',b)+1,PosEx('"',b,Pos('"',b)+1)-(Pos('"',b)+1));
+  if Pos('+CUSD: 0',b)<>0 then
+  begin
+    if Pos('+CUSD: 0,"',b)<>0 then
+    begin
+      Delete(b,1,Pos('+CUSD: 0',b)+9);
+      result:=Copy(b,1,Pos('"',b)-1);
+    end
+    else
+    begin
+      Delete(b,1,Pos('+CUSD: 0,80',b)+11);
+      result:=Copy(b,1,Pos(',',b)-1);
+    end;
+  end;
+  if ItNoLatin(result)=false then
+    result:=UCSToAnsi(result);
 end;
 
 function myswaptime(const s:string):string;

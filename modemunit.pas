@@ -568,7 +568,7 @@ begin
     //Россия
     'MTS-RUS', 'MTS RUS', 'MTS': OperatorNomer := SIM_MTS;
     '25099', 'BEE L', 'BEE LINE', 'BEELINE': OperatorNomer := SIM_BEELINE;
-    'MEGAFON', 'NWGSM RUS': OperatorNomer := SIM_MEGAFON;
+    'MEGAFON', 'NWGSM RUS', 'MEGAFON RUS': OperatorNomer := SIM_MEGAFON;
     '25020', '40177', 'CC 250 NC 03', 'TELE2', 'MOBILE TELECOM SERVICE': OperatorNomer := SIM_TELE2;
     //Казахстан
     'ALTEL': OperatorNomer := SIM_ALTEL;
@@ -2021,6 +2021,7 @@ begin
         TC35i: SendandState('AT+CXXCID');
         MC55: SendandState('AT+CXXCID');
         M35: SendandState('AT+QCCID');
+        UC15,SIMCOM:SendandState('AT+CCID');
         M590: SendandState('AT+CCID');
         else
           SendandState('AT+CXXCID');
@@ -2261,6 +2262,10 @@ begin
             ModemModel := M35;
           if Pos('M35', sOK) <> 0 then
             ModemModel := M35;
+          if Pos('UC15', sOK) <> 0 then
+            ModemModel := UC15;
+          if Pos('SIMCOM_SIM5320E', sOK) <> 0 then
+            ModemModel := SIMCOM;
           if Pos('WAVECOM', sOK) <> 0 then
             ModemModel := Q2403;
           if Pos('M590', sOK) <> 0 then
@@ -2530,6 +2535,20 @@ begin
     else///////////////////ЕСЛИ БЕЗ ОК////////////
     begin
       case MODEM_STATE of
+        MODEM_AR_CLIP:
+        begin
+          if (ModemModel=UC15)AND(Pos('ERROR', s) <> 0) then
+          begin
+            TextSmsAdd('Симка не вставлена');
+            Delete(RecvText, Pos('ERROR', RecvText), Pos(#10, RecvText, Pos('ERROR', RecvText)) - Pos('ERROR', RecvText) + 1);
+            RecvState(MODEM_ERROR);
+            if (nomer <> Nomer_Neopredelen) then
+            begin
+              nomer := data_neopredelen;
+              SaveToDb();
+            end;
+          end;
+        end;
         MODEM_MAIN_WHILE:
         begin
           if (Pos('RING', s) <> 0) then
@@ -2562,9 +2581,7 @@ begin
           end;
           if (Pos('+CUSD: 4', s) <> 0) then
           begin
-
             Delete(RecvText, Pos('+CUSD: 4', RecvText), Pos(#10, RecvText, Pos('+CUSD: 4', RecvText)) -  Pos('+CUSD: 4', RecvText) + 1);
-
             if (_ussdcounttry<3) then
             begin
               TextSmsAdd('Ошибка USSD запроса. Повтор.');
@@ -2594,7 +2611,15 @@ begin
 
             exit;
           end;
-          if Pos('+CUSD: 2', s) <> 0 then
+          if (Pos('+CUSD: 0', s) <> 0) then
+          begin
+            starter.timersec := 1;
+            sec_from_start := 0;
+            OnSms(TimeDMYHM(), 'USSD', USSDResponse(s));
+            Delete(RecvText, Pos('+CUSD: 0', RecvText), Pos(#10, RecvText, Pos('+CUSD: 0', RecvText)) - Pos('+CUSD: 0', RecvText) + 1);
+            exit;
+          end;
+          if (Pos('+CUSD: 2', s) <> 0) then
           begin
             starter.timersec := 1;
             sec_from_start := 0;
