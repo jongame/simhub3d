@@ -1101,7 +1101,7 @@ begin
     SIM_MTS: SendUSSD('*111*0887#');
     SIM_BEELINE: SendUSSD('*110*10#'); //SendUSSD('*160#');
     SIM_MEGAFON: SendUSSD('*205#');
-    SIM_TELE2: SendUSSD('*120#'); //SendUSSD('*201#');
+    SIM_TELE2: SendUSSD('*201#');
 
     SIM_KCELL: SendUSSD('*114#');
     SIM_ALTEL: SendUSSD('*802#');
@@ -1724,9 +1724,9 @@ procedure TMyModem.ShowSms(a, b: string);
 begin
   if (a <> '') then
   begin
-    MainMemoWrite(b, idthread);
+    MainMemoWrite(StringReplace(b,#10,'',[rfreplaceall]), idthread);
   end;
-  TextSmsAdd(b);
+  TextSmsAdd(StringReplace(b,#10,'',[rfreplaceall]));
 end;
 
 procedure TMyModem.OnSms(const date, Notkogo, Text: ansistring);
@@ -1768,6 +1768,11 @@ begin
       begin
         if (Length(GetNumber(Text)) = 10) then
           nomer := '+7' + GetNumber(Text);
+        if (Length(GetNumber(Text)) = 20) then
+        begin
+
+          nomer := '+7' + Copy(GetNumber(Text),1,10);
+        end;
       end;
       SIM_TELE2:
       begin
