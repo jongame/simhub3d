@@ -2058,6 +2058,7 @@ begin
         TC35i: SendandState('AT+CPMS="MT"');
         MC55: SendandState('AT+CPMS="MT"');
         M35: SendandState('AT+CPMS="MT"');
+        UC15: SendandState('AT+CPMS="MT"');
         else
           SendandState('AT+CPMS="SM"');
       end;
