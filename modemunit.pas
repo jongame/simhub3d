@@ -72,6 +72,7 @@ type
     function ParseError(s:string):integer;
     function ParseError2str(s:string):string;
     procedure _SendUSSD(s: string);
+    procedure _SendUSSDSIMCOM(s: string);
     function _RPORT_STATE: TPORT_STATE;
     procedure _WPORT_STATE(const Value: TPORT_STATE);
     function _RMODEM_STATE: byte;
@@ -144,6 +145,7 @@ type
     function SendSms_timeout(komu, text: string):integer;
     procedure Send(s: string);
     procedure SendUSSD(s: string; secondcmd: string = '');
+    procedure SendUSSDSIMCOM(s: string; secondcmd: string = '');
     procedure OnSms(const date, Notkogo, Text: ansistring);
     procedure SMSHistory_LoadClear();
     procedure SMSHistoryAdd(t: string); overload;
@@ -717,8 +719,18 @@ begin
     MC55:
       Send('ATD' + s + ';');
     M35:
-      Send('AT+CUSD=1,"' + s + '"'); //Send('ATD' + s + ';');
+      Send('AT+CUSD=1,"' + s + '"');
+    SIMCOM:
+      Send('AT+CUSD=1,"' + s + '",15');
     else
+      Send('AT+CUSD=1,"' + s + '"');
+  end;
+end;
+
+procedure TMyModem._SendUSSDSIMCOM(s: string);
+begin
+  case ModemModel of
+    SIMCOM:
       Send('AT+CUSD=1,"' + s + '"');
   end;
 end;
@@ -1194,6 +1206,14 @@ begin
   _ussdcounttry := 0;
   _secondussdcmd := secondcmd;
   _SendUSSD(s);
+end;
+
+procedure TMyModem.SendUSSDSIMCOM(s: string; secondcmd: string);
+begin
+  _lastussd := s;
+  _ussdcounttry := 0;
+  _secondussdcmd := secondcmd;
+  _SendUSSDSIMCOM(s);
 end;
 
 procedure TMyModem.SMSHistory_LoadClear();

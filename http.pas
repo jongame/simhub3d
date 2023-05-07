@@ -414,8 +414,14 @@ begin
           end
           else
           begin
-            if Length(mygetDecode(d.Values['cmd']))=1 then
-              AM[StrToInt(d.Values['id'])].SendUSSD(mygetDecode(d.Values['cmd']))
+            if (Length(mygetDecode(d.Values['cmd']))=1)OR((Length(mygetDecode(d.Values['cmd']))<5)AND(AM[StrToInt(d.Values['id'])].ModemModel = SIMCOM)) then
+            begin
+              if (AM[StrToInt(d.Values['id'])].ModemModel = SIMCOM) then
+                AM[StrToInt(d.Values['id'])].SendUSSDSIMCOM(mygetDecode(d.Values['cmd']))
+              else
+                AM[StrToInt(d.Values['id'])].SendUSSD(mygetDecode(d.Values['cmd']));
+
+            end
             else
               if (Pos('*',mygetDecode(d.Values['cmd']))<>0) AND (Pos('#',mygetDecode(d.Values['cmd']))<>0) AND (Pos('ATD',mygetDecode(d.Values['cmd']))=0) AND (Pos('AT+CUSD=',mygetDecode(d.Values['cmd']))=0) then
                 AM[StrToInt(d.Values['id'])].SendUSSD(mygetDecode(d.Values['cmd']))
